@@ -1,25 +1,17 @@
-// src/components/Toggle.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Easing,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 
 interface ToggleProps {
   initial?: boolean;
   onToggle?: (newValue: boolean) => void;
-  width?: number;      // default 110 (≈6.8rem)
-  height?: number;     // default 32
-  activeColor?: string;// default '#0B00A9'
-  inactiveColor?: string;// default '#2D2D2D'
-  thumbColor?: string; // default '#FFF'
-  textOn?: string;     // default 'Ativo'
-  textOff?: string;    // default 'Inativo'
-  textStyle?: object;  // override for text
+  width?: number;
+  height?: number; 
+  activeColor?: string;
+  inactiveColor?: string;
+  thumbColor?: string; 
+  textOn?: string;
+  textOff?: string;
+  textStyle?: object;
 }
 
 const Toggle: React.FC<ToggleProps> = ({
@@ -77,7 +69,7 @@ const Toggle: React.FC<ToggleProps> = ({
   });
 
   const fontSize = 14;
-  const halfText = fontSize / 2;
+  const textTop = trackHeight / 2 - fontSize / 2;
 
   return (
     <TouchableOpacity
@@ -102,7 +94,7 @@ const Toggle: React.FC<ToggleProps> = ({
               styles.text, 
               { 
                 right: PADDING + thumbSize + TEXT_GAP,
-                transform: [{ translateY: -halfText}]
+                top: textTop,
               }, 
               textStyle
             ]}
@@ -114,7 +106,7 @@ const Toggle: React.FC<ToggleProps> = ({
               styles.text, 
               { 
                 left: PADDING + thumbSize + TEXT_GAP,
-                transform: [{ translateY: -halfText }],
+                top: textTop,
               },
               textStyle
             ]}
@@ -150,8 +142,6 @@ const styles = StyleSheet.create({
   },
   text: {
     position: 'absolute',
-    top: '45%',
-    // transform: [{ translateY: 40 }], 
     fontSize: 14,
     fontWeight: '500',
     color: '#FFFFFF',
