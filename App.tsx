@@ -1,4 +1,3 @@
-// App.tsx
 import React from 'react'
 import BottomTabs from './src/navigation/BottomTabs'
 import { LocationsProvider } from './src/context/LocationsContext'

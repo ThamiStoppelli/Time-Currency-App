@@ -1,35 +1,68 @@
-import axios from 'axios'
-import Constants from 'expo-constants'
-
-const WEATHER_KEY = Constants.manifest?.extra?.OPENWEATHER_KEY
-const weatherApi = axios.create({
-  baseURL: 'https://api.openweathermap.org/data/2.5',
-})
+import axios from "axios"
 
 export interface WeatherData {
   temp: number
   description: string
   icon: string
-  // adicione o que precisar (umidade, velocidade do vento…)
+  rainChance?: number
+  windKph?: number
+  uvIndex?: number
 }
 
-/**
- * Retorna clima atual por lat/lon
- */
+const weatherApi = axios.create({
+  baseURL: "https://api.open-meteo.com/v1",
+})
+
 export async function fetchWeather(lat: number, lon: number): Promise<WeatherData> {
-  const resp = await weatherApi.get('/weather', {
+  const resp = await weatherApi.get("/forecast", {
     params: {
-      lat,
-      lon,
-      units: 'metric',
-      lang: 'pt',
-      appid: WEATHER_KEY,
+      latitude: lat,
+      longitude: lon,
+      current_weather: true,
+      hourly: "precipitation_probability,uv_index,wind_speed_10m",
     },
   })
-  const d = resp.data
+
+  const data = resp.data
+  const current = data.current_weather
+
+  const code = current.weathercode
+  const icon = weatherCodeToEmoji(code)
+  const description = weatherCodeToText(code)
+
   return {
-    temp: d.main.temp,
-    description: d.weather[0].description,
-    icon: d.weather[0].icon,
+      temp: current.temperature,
+      description,
+      icon,
+      windKph: current.windspeed,
+      rainChance: data.hourly?.precipitation_probability?.[0] ?? undefined,
+      uvIndex: data.hourly?.uv_index?.[0] ?? undefined,
   }
+}
+
+function weatherCodeToText(code: number): string {
+  const map: Record<number, string> = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Depositing rime fog",
+    51: "Drizzle",
+    61: "Light rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Snowfall",
+    80: "Rain showers",
+  }
+  return map[code] || "Unknown"
+}
+
+function weatherCodeToEmoji(code: number): string {
+  if (code === 0) return "☀️"
+  if (code <= 3) return "🌤️"
+  if (code <= 45) return "🌫️"
+  if (code <= 65) return "🌧️"
+  if (code === 80) return "🌦️"
+  return "❓"
 }

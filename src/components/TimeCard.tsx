@@ -39,7 +39,10 @@ export function TimeCard({
 
       <View style={styles.infoColumn}>
         <Text style={styles.locationText}>
-          {country}, {city} <Text style={styles.gmtText}>({gmtOffset})</Text>
+          {country}, {city} 
+          {gmtOffset ? (
+            <Text style={styles.gmtText}> ({gmtOffset})</Text>
+          ) : null}
         </Text>
         <Text style={styles.timeText}>{timeText}</Text>
       </View>

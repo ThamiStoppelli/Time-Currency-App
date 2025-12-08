@@ -1,129 +1,203 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Modal } from 'react-native'
-import { useLocations } from '../context/LocationsContext'
-import Toggle from '../components/Toggle'
-import { PlusIcon } from '../assets/svgs/plus-icon'
-import { TimeCard } from '../components/TimeCard'
+import React, { useEffect, useState } from "react"
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  Modal,
+} from "react-native"
+import Toggle from "../components/Toggle"
+import { PlusIcon } from "../assets/svgs/plus-icon"
+import { TimeCard } from "../components/TimeCard"
+import { searchCities, GeoCityResult } from "../services/geocodingApi"
 
-interface TimezoneItem {
-  zone: string
-  datetime: string
-}
-
-type CityOption = {
+type TimeCity = {
   id: string
   city: string
   country: string
   countryCode: string
   timezone: string
-  gmtOffsetLabel: string
-  offsetMinutes: number
 }
 
-type LocationItem = {
-  id: string
-  name: string
-  latitude: number
-  longitude: number
-}
-
-//mock
-const MOCK_CITIES: CityOption[] = [
+const INITIAL_COMPARISON_CITIES: TimeCity[] = [
   {
-    id: "nyc",
+    id: "nyc-America/New_York",
     city: "New York",
     country: "USA",
     countryCode: "US",
     timezone: "America/New_York",
-    gmtOffsetLabel: "GMT-5",
-    offsetMinutes: -5 * 60,
   },
   {
-    id: "la",
+    id: "la-America/Los_Angeles",
     city: "Los Angeles",
     country: "USA",
     countryCode: "US",
     timezone: "America/Los_Angeles",
-    gmtOffsetLabel: "GMT-8",
-    offsetMinutes: -8 * 60,
   },
   {
-    id: "fortaleza",
-    city: "Fortaleza",
-    country: "Brazil",
-    countryCode: "BR",
-    timezone: "America/Fortaleza",
-    gmtOffsetLabel: "GMT-3",
-    offsetMinutes: -3 * 60,
-  },
-  {
-    id: "london",
-    city: "London",
-    country: "UK",
-    countryCode: "GB",
-    timezone: "Europe/London",
-    gmtOffsetLabel: "GMT+0",
-    offsetMinutes: 0,
-  },
-  {
-    id: "berlin",
+    id: "berlin-Europe/Berlin",
     city: "Berlin",
     country: "Germany",
     countryCode: "DE",
     timezone: "Europe/Berlin",
-    gmtOffsetLabel: "GMT+1",
-    offsetMinutes: 1 * 60,
   },
 ]
 
-function formatTimeSimple(date: Date, mode24h: boolean): string {
-  let hours = date.getHours()
-  const minutes = date.getMinutes()
+const POPULAR_TIME_CITIES: TimeCity[] = [
+  {
+    id: "london-Europe/London",
+    city: "London",
+    country: "United Kingdom",
+    countryCode: "GB",
+    timezone: "Europe/London",
+  },
+  {
+    id: "lisbon-Europe/Lisbon",
+    city: "Lisbon",
+    country: "Portugal",
+    countryCode: "PT",
+    timezone: "Europe/Lisbon",
+  },
+  {
+    id: "tokyo-Asia/Tokyo",
+    city: "Tokyo",
+    country: "Japan",
+    countryCode: "JP",
+    timezone: "Asia/Tokyo",
+  },
+  {
+    id: "sydney-Australia/Sydney",
+    city: "Sydney",
+    country: "Australia",
+    countryCode: "AU",
+    timezone: "Australia/Sydney",
+  },
+  {
+    id: "saopaulo-America/Sao_Paulo",
+    city: "São Paulo",
+    country: "Brazil",
+    countryCode: "BR",
+    timezone: "America/Sao_Paulo",
+  },
+  {
+    id: "mexicocity-America/Mexico_City",
+    city: "Mexico City",
+    country: "Mexico",
+    countryCode: "MX",
+    timezone: "America/Mexico_City",
+  },
+  {
+    id: "capetown-Africa/Johannesburg",
+    city: "Cape Town",
+    country: "South Africa",
+    countryCode: "ZA",
+    timezone: "Africa/Johannesburg",
+  },
+]
 
-  if (mode24h) {
-    const hh = String(hours).padStart(2, "0")
-    const mm = String(minutes).padStart(2, "0")
-    return `${hh}:${mm}`
-  } else {
-    const ampm = hours >= 12 ? "PM" : "AM"
-    const normalized = hours % 12 || 12
-    const hh = String(normalized).padStart(2, "0")
-    const mm = String(minutes).padStart(2, "0")
-    return `${hh}:${mm} ${ampm}`
+function formatTimeForZone(zone: string, mode24h: boolean, now: Date): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: !mode24h,
+      timeZone: zone,
+    }).format(now)
+  } catch {
+    return "--:--"
   }
 }
 
-// encontra meta da cidade pelo timezone salvo no context
-function findCityMetaByZone(zone: string): CityOption | undefined {
-  return MOCK_CITIES.find((c) => c.timezone === zone)
+function offsetLabelForZone(zone: string, now: Date): string {
+  try {
+    const utc = new Date(
+      now.toLocaleString("en-US", { timeZone: "UTC" })
+    )
+    const local = new Date(
+      now.toLocaleString("en-US", { timeZone: zone })
+    )
+
+    const utcMs = utc.getTime()
+    const localMs = local.getTime()
+
+    if (!Number.isFinite(utcMs) || !Number.isFinite(localMs)) {
+      return ""
+    }
+
+    const diffMinRaw = (localMs - utcMs) / 60000
+    if (!Number.isFinite(diffMinRaw)) {
+      return ""
+    }
+
+    const diffMin = Math.round(diffMinRaw)
+    const sign = diffMin >= 0 ? "+" : "-"
+    const abs = Math.abs(diffMin)
+    const hours = Math.floor(abs / 60)
+    const minutes = abs % 60
+    const minutesPart = minutes ? `:${String(minutes).padStart(2, "0")}` : ""
+    return `GMT${sign}${hours}${minutesPart}`
+  } catch {
+    return ""
+  }
 }
 
 export default function TimeScreen() {
-  const { locations, addLocation, removeLocation } = useLocations()
-
   const [mode24h, setMode24h] = useState(false)
   const [now, setNow] = useState<Date>(new Date())
+
   const [localZone, setLocalZone] = useState<string | null>(null)
+  const [localCountryCode, setLocalCountryCode] = useState<string>("")
   const [loadingLocal, setLoadingLocal] = useState(true)
 
-  // modal + search 
+  const [cities, setCities] = useState<TimeCity[]>(INITIAL_COMPARISON_CITIES)
+
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [citySearch, setCitySearch] = useState("")
+  const [searchResults, setSearchResults] = useState<TimeCity[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
 
-  // 1) pegar timezone do device
   useEffect(() => {
-    try {
-      const tzUser = Intl.DateTimeFormat().resolvedOptions().timeZone
-      setLocalZone(tzUser)
-    } catch (e) {
-      console.warn("Could not resolve device timezone", e)
-      setLocalZone("Local/Device")
-    } finally {
-      setLoadingLocal(false)
+    let cancelled = false
+
+    async function init() {
+      try {
+        const tzUser = Intl.DateTimeFormat().resolvedOptions().timeZone
+        setLocalZone(tzUser)
+
+        if (tzUser) {
+          const cityPart = tzUser.split("/")[1]?.replace("_", " ")
+          if (cityPart) {
+            try {
+              const results = await searchCities(cityPart)
+              if (!cancelled && results.length > 0) {
+                setLocalCountryCode(results[0].country_code)
+              }
+            } catch (e) {
+              console.warn("Could not fetch local country from geocoding", e)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Could not resolve device timezone", e)
+        setLocalZone(null)
+      } finally {
+        if (!cancelled) {
+          setLoadingLocal(false)
+        }
+      }
+    }
+
+    init()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
-  // 2) atualizar "now" a cada 30s para os horários se manterem atualizados
   useEffect(() => {
     const id = setInterval(() => {
       setNow(new Date())
@@ -131,6 +205,81 @@ export default function TimeScreen() {
 
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (!isModalVisible) return
+
+    if (!citySearch.trim()) {
+      setSearchResults([])
+      setSearchError(null)
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      loadSearch(citySearch)
+    }, 400)
+
+    return () => clearTimeout(timeout)
+  }, [citySearch, isModalVisible])
+
+  function filterOutExisting(list: TimeCity[]): TimeCity[] {
+    const existingIds = new Set(cities.map(c => c.id))
+    return list.filter(c => !existingIds.has(c.id))
+  }
+
+  async function loadSearch(query: string) {
+    try {
+      setSearchLoading(true)
+      setSearchError(null)
+
+      const results = await searchCities(query)
+
+      const mapped: TimeCity[] = results
+        .filter((r: GeoCityResult) => !!r.timezone)
+        .map((r: GeoCityResult) => ({
+          id: `${r.name}-${r.timezone}`,
+          city: r.name,
+          country: r.country,
+          countryCode: r.country_code,
+          timezone: r.timezone,
+        }))
+
+      setSearchResults(filterOutExisting(mapped))
+    } catch (err) {
+      console.error("Erro ao buscar cidades (time)", err)
+      setSearchError("Error searching cities. Try again.")
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  function handleAddCity(city: TimeCity) {
+    setCities(prev => [...prev, city])
+    setIsModalVisible(false)
+    setCitySearch("")
+    setSearchResults([])
+  }
+
+  function handleRemoveCity(id: string) {
+    setCities(prev => prev.filter(c => c.id !== id))
+  }
+
+  function renderTimeCard(city: TimeCity) {
+    const timeText = formatTimeForZone(city.timezone, mode24h, now)
+    const offsetLabel = offsetLabelForZone(city.timezone, now)
+
+    return (
+      <TimeCard
+        city={city.city}
+        country={city.country}
+        countryCode={city.countryCode}
+        gmtOffset={offsetLabel}
+        timeText={timeText}
+        onRemove={() => handleRemoveCity(city.id)}
+      />
+    )
+  }
 
   if (loadingLocal) {
     return (
@@ -140,34 +289,24 @@ export default function TimeScreen() {
     )
   }
 
-  const isPurple = !mode24h;
+  const isPurple = !mode24h
 
-  // calcular horário UTC a partir do now local
-  const utcMillis = now.getTime() + now.getTimezoneOffset() * 60_000
+  const modalListData = citySearch.trim()
+    ? searchResults
+    : filterOutExisting(POPULAR_TIME_CITIES)
 
-  // Filtro de cidades mockadas no modal
-  const filteredCities = MOCK_CITIES.filter((city) => {
-    if (!citySearch.trim()) return true
-    const q = citySearch.toLowerCase()
-    return (
-      city.city.toLowerCase().includes(q) ||
-      city.country.toLowerCase().includes(q)
-    )
-  })
-
-  function handleSelectCity(option: CityOption) {
-    // compatibilidade com LocationsContext -> usa timezone como name
-    if (!locations.some((loc) => loc.name === option.timezone)) {
-      addLocation({
-        id: option.timezone,
-        name: option.timezone,
-        latitude: 0,
-        longitude: 0,
-      })
-    }
-    setCitySearch("")
-    setIsModalVisible(false)
-  }
+  const localCityName =
+    localZone?.split("/")[1]?.replace("_", " ") ?? "Current"
+  const localCountryName =
+    localZone?.split("/")[0]?.replace("_", " ") ?? "Local"
+  const localOffsetLabel = localZone
+    ? offsetLabelForZone(localZone, now)
+    : "Local"
+  const localTimeText = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !mode24h,
+  }).format(now)
 
   return (
     <View style={styles.container}>
@@ -182,24 +321,20 @@ export default function TimeScreen() {
           textOff="24 hours"
         />
       </View>
-      
-      {/* Card da localização atual */}
-      {localZone && (
-        <TimeCard
-          city={localZone.split("/")[1] || "Current"}
-          country={localZone.split("/")[0] || "Local"}
-          countryCode={"BR"} // mock
-          gmtOffset={"Local"}
-          timeText={formatTimeSimple(now, mode24h)}
-          isLocal
-        />
-      )}
+
+      <TimeCard
+        city={localCityName}
+        country={localCountryName}
+        countryCode={localCountryCode}
+        gmtOffset={localOffsetLabel}
+        timeText={localTimeText}
+        isLocal
+      />
 
       <Text style={[styles.title, { marginTop: 16 }]}>Comparison</Text>
 
-      {/* Lista de zonas adicionadas (baseada no LocationsContext) */}
       <FlatList
-        data={locations as LocationItem[]}
+        data={cities}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 32 }}
         ListEmptyComponent={() => (
@@ -218,40 +353,9 @@ export default function TimeScreen() {
             </TouchableOpacity>
           </View>
         )}
-        renderItem={({ item }) => {
-          const meta = findCityMetaByZone(item.name)
-
-          if (!meta) {
-            return (
-              <TimeCard
-                city={item.name.split("/")[1] ?? item.name}
-                country={item.name.split("/")[0] ?? ""}
-                countryCode={""}
-                gmtOffset={""}
-                timeText={"--:--"}
-                onRemove={() => removeLocation(item.name as any)}
-              />
-            )
-          }
-
-          const cityUtcMillis = utcMillis + meta.offsetMinutes * 60_000
-          const cityDate = new Date(cityUtcMillis)
-          const timeText = formatTimeSimple(cityDate, mode24h)
-
-          return (
-            <TimeCard
-              city={meta.city}
-              country={meta.country}
-              countryCode={meta.countryCode}
-              gmtOffset={meta.gmtOffsetLabel}
-              timeText={timeText}
-              onRemove={() => removeLocation(item.name as any)}
-            />
-          )
-        }}
+        renderItem={({ item }) => renderTimeCard(item)}
       />
 
-      {/* Modal de busca de cidades */}
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -269,20 +373,43 @@ export default function TimeScreen() {
               onChangeText={setCitySearch}
             />
 
+            {searchLoading && (
+              <View style={{ paddingVertical: 8 }}>
+                <ActivityIndicator size="small" color="#705ADF" />
+              </View>
+            )}
+
+            {searchError && (
+              <Text style={{ color: "red", marginBottom: 8 }}>
+                {searchError}
+              </Text>
+            )}
+
             <FlatList
-              data={filteredCities}
+              data={modalListData}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalItem}
-                  onPress={() => handleSelectCity(item)}
+                  onPress={() => handleAddCity(item)}
                 >
                   <Text style={styles.modalItemText}>
-                    {item.country}, {item.city} ({item.gmtOffsetLabel})
+                    {item.country}, {item.city}
                   </Text>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                !searchLoading
+                  ? () => (
+                      <Text style={{ color: "#666", marginTop: 8 }}>
+                        {citySearch.trim()
+                          ? `No results for "${citySearch}"`
+                          : "All suggested cities are already added."}
+                      </Text>
+                    )
+                  : null
+              }
             />
 
             <TouchableOpacity
@@ -302,18 +429,18 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     padding: 16,
-    margin: 6 
+    margin: 6,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 8,
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: { 
     fontSize: 18, 
@@ -334,13 +461,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 999,
   },
-  addButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#705ADF",
-    fontWeight: "600",
-  },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
@@ -385,11 +505,3 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 })
-
-/*
-Usa useCurrentLocation() para pegar coords do dispositivo.
-
-Chama fetchTimeForZone(timezone) para obter hora atual local.
-
-Mapeia cada “location extra” (armazenada no Context) para buscar fetchTimeForZone(loc.name).
- */

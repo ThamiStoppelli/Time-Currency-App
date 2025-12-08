@@ -1,7 +1,6 @@
 import * as Location from 'expo-location';
 import { useState, useEffect } from 'react'
 
-// Estrutura simples: pede permissão, retorna { latitude, longitude } ou erro
 export function useCurrentLocation() {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [error, setError] = useState<string | null>(null)

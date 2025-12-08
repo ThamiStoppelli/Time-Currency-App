@@ -1,148 +1,282 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Modal, StyleSheet } from 'react-native'
+import React, { useEffect, useState } from "react"
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+} from "react-native"
+
 import { WeatherCard } from "../components/WeatherCard"
 import { PlusIcon } from "../assets/svgs/plus-icon"
 import { useCurrentLocation } from "../hooks/useLocation"
+import { fetchWeather, WeatherData } from "../services/weatherApi"
+import { searchCities, GeoCityResult } from "../services/geocodingApi"
 
-type WeatherCity = {
+type SavedCity = {
   id: string
   city: string
   country: string
   countryCode: string
-  temperature: number
-  feelsLike: number
-  condition: string
-  icon: string
-  rainChance: number
-  uvIndex: number
-  windKph: number
+  lat: number
+  lon: number
 }
 
-// MOCK inicial de cidades (depois trocamos por API real)
-const MOCK_WEATHER_CITIES: WeatherCity[] = [
+const INITIAL_LOCAL_CITY: SavedCity = {
+  id: "fortaleza--3.7319--38.5267",
+  city: "Fortaleza",
+  country: "Brazil",
+  countryCode: "BR",
+  lat: -3.7319,
+  lon: -38.5267,
+}
+
+const INITIAL_COMPARISON_CITIES: SavedCity[] = [
   {
-    id: "fortaleza",
-    city: "Fortaleza",
-    country: "Brazil",
-    countryCode: "BR",
-    temperature: 30,
-    feelsLike: 34,
-    condition: "Sunny with some clouds",
-    icon: "🌤",
-    rainChance: 10,
-    uvIndex: 9,
-    windKph: 18,
-  },
-  {
-    id: "berlin",
+    id: "berlin-52.52-13.405",
     city: "Berlin",
     country: "Germany",
     countryCode: "DE",
-    temperature: 12,
-    feelsLike: 10,
-    condition: "Cloudy",
-    icon: "☁️",
-    rainChance: 20,
-    uvIndex: 2,
-    windKph: 13,
+    lat: 52.52,
+    lon: 13.405,
   },
   {
-    id: "nyc",
+    id: "nyc-40.7128--74.006",
     city: "New York",
     country: "USA",
     countryCode: "US",
-    temperature: 18,
-    feelsLike: 18,
-    condition: "Clear sky",
-    icon: "🌙",
-    rainChance: 5,
-    uvIndex: 4,
-    windKph: 9,
-  },
-  {
-    id: "cusco",
-    city: "Cusco",
-    country: "Peru",
-    countryCode: "PE",
-    temperature: 9,
-    feelsLike: 7,
-    condition: "Cool and dry",
-    icon: "🌥",
-    rainChance: 15,
-    uvIndex: 8,
-    windKph: 16,
-  },
-  {
-    id: "bkk",
-    city: "Bangkok",
-    country: "Thailand",
-    countryCode: "TH",
-    temperature: 33,
-    feelsLike: 38,
-    condition: "Hot and humid",
-    icon: "🌡",
-    rainChance: 40,
-    uvIndex: 11,
-    windKph: 11,
+    lat: 40.7128,
+    lon: -74.006,
   },
 ]
 
-function getCityMetaById(id: string): WeatherCity | undefined {
-  return MOCK_WEATHER_CITIES.find((c) => c.id === id)
-}
+const POPULAR_CITIES: SavedCity[] = [
+  {
+    id: "london-51.5074--0.1278",
+    city: "London",
+    country: "United Kingdom",
+    countryCode: "GB",
+    lat: 51.5074,
+    lon: -0.1278,
+  },
+  {
+    id: "paris-48.8566-2.3522",
+    city: "Paris",
+    country: "France",
+    countryCode: "FR",
+    lat: 48.8566,
+    lon: 2.3522,
+  },
+  {
+    id: "tokyo-35.6762-139.6503",
+    city: "Tokyo",
+    country: "Japan",
+    countryCode: "JP",
+    lat: 35.6762,
+    lon: 139.6503,
+  },
+  {
+    id: "lisbon-38.7223--9.1393",
+    city: "Lisbon",
+    country: "Portugal",
+    countryCode: "PT",
+    lat: 38.7223,
+    lon: -9.1393,
+  },
+  {
+    id: "sydney--33.8688-151.2093",
+    city: "Sydney",
+    country: "Australia",
+    countryCode: "AU",
+    lat: -33.8688,
+    lon: 151.2093,
+  },
+  {
+    id: "saopaulo--23.5505--46.6333",
+    city: "São Paulo",
+    country: "Brazil",
+    countryCode: "BR",
+    lat: -23.5505,
+    lon: -46.6333,
+  },
+  {
+    id: "mexicocity-19.4326--99.1332",
+    city: "Mexico City",
+    country: "Mexico",
+    countryCode: "MX",
+    lat: 19.4326,
+    lon: -99.1332,
+  },
+  {
+    id: "capetown--33.9249-18.4241",
+    city: "Cape Town",
+    country: "South Africa",
+    countryCode: "ZA",
+    lat: -33.9249,
+    lon: 18.4241,
+  },
+]
 
 export default function WeatherScreen() {
   const { coords, error: locError } = useCurrentLocation()
 
   const [loadingLocal, setLoadingLocal] = useState(true)
-  const [localCityId, setLocalCityId] = useState<string>("fortaleza")
 
-  // cidades selecionadas para comparação (não inclui a local, que é separada)
-  const [selectedCityIds, setSelectedCityIds] = useState<string[]>([
-    "berlin",
-    "nyc",
-  ])
+  const [localCity, setLocalCity] = useState<SavedCity | null>(
+    INITIAL_LOCAL_CITY
+  )
+  const [cities, setCities] = useState<SavedCity[]>(INITIAL_COMPARISON_CITIES)
 
-  // modal de adicionar cidade
+  const [weatherById, setWeatherById] = useState<Record<string, WeatherData | null>>({})
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
+
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [search, setSearch] = useState("")
+  const [searchResults, setSearchResults] = useState<SavedCity[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
 
-  // simular descoberta de cidade local (por enquanto mapeado fixo)
   useEffect(() => {
-    // quando tivermos API real, aqui fazemos coords → cidade
-    if (coords) {
-      // mock: se tem coords, usa Fortaleza
-      setLocalCityId("fortaleza")
-    }
+    // aqui depois dá pra usar coords -> reverse geocoding e setar localCity dinamicamente
     setLoadingLocal(false)
   }, [coords])
 
-  const localCity = useMemo(
-    () => getCityMetaById(localCityId),
-    [localCityId]
-  )
+  function filterOutExisting(list: SavedCity[]): SavedCity[] {
+    const allIds = new Set<string>([
+      ...(localCity ? [localCity.id] : []),
+      ...cities.map(c => c.id),
+    ])
+    return list.filter(c => !allIds.has(c.id))
+  }
 
-  const comparisonCities = useMemo(
-    () =>
-      selectedCityIds
-        .map((id) => getCityMetaById(id))
-        .filter((c): c is WeatherCity => !!c),
-    [selectedCityIds]
-  )
+  async function loadWeatherForCity(city: SavedCity) {
+    setLoadingIds(prev => {
+      const copy = new Set(prev)
+      copy.add(city.id)
+      return copy
+    })
 
-  const availableForAdd = useMemo(
-    () =>
-      MOCK_WEATHER_CITIES.filter(
-        (c) =>
-          c.id !== localCityId &&
-          !selectedCityIds.includes(c.id) &&
-          (
-            c.city.toLowerCase().includes(search.toLowerCase()) ||
-            c.country.toLowerCase().includes(search.toLowerCase())
-          )
-      ),
-    [search, selectedCityIds, localCityId]
-  )
+    try {
+      const data = await fetchWeather(city.lat, city.lon)
+      setWeatherById(prev => ({
+        ...prev,
+        [city.id]: data,
+      }))
+    } catch (err) {
+      console.error("Erro ao buscar clima para", city.id, err)
+      setWeatherById(prev => ({
+        ...prev,
+        [city.id]: null,
+      }))
+    } finally {
+      setLoadingIds(prev => {
+        const copy = new Set(prev)
+        copy.delete(city.id)
+        return copy
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (localCity) {
+      loadWeatherForCity(localCity)
+    }
+  }, [localCity?.id])
+
+  useEffect(() => {
+    cities.forEach(city => {
+      if (!weatherById[city.id]) {
+        loadWeatherForCity(city)
+      }
+    })
+  }, [cities.map(c => c.id).join(","), weatherById])
+
+  useEffect(() => {
+    if (!isModalVisible) return
+
+    if (!search.trim()) {
+      setSearchResults([])
+      setSearchError(null)
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      loadSearch(search)
+    }, 400)
+
+    return () => clearTimeout(timeout)
+  }, [search, isModalVisible])
+
+  async function loadSearch(query: string) {
+    try {
+      setSearchLoading(true)
+      setSearchError(null)
+
+      const results = await searchCities(query)
+
+      const mapped: SavedCity[] = results.map((r: GeoCityResult) => ({
+        id: `${r.name}-${r.latitude}-${r.longitude}`,
+        city: r.name,
+        country: r.country,
+        countryCode: r.country_code,
+        lat: r.latitude,
+        lon: r.longitude,
+      }))
+
+      const filtered = filterOutExisting(mapped)
+      setSearchResults(filtered)
+    } catch (err) {
+      console.error("Erro ao buscar cidades", err)
+      setSearchError("Error searching cities. Try again.")
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  function handleRemoveCity(id: string) {
+    setCities(prev => prev.filter(c => c.id !== id))
+  }
+
+  function handleAddCity(city: SavedCity) {
+    setCities(prev => [...prev, city])
+    setIsModalVisible(false)
+    setSearch("")
+    setSearchResults([])
+    loadWeatherForCity(city)
+  }
+
+  function renderWeatherCard(meta: SavedCity, isLocal?: boolean) {
+    const weather = weatherById[meta.id]
+    const loading = loadingIds.has(meta.id)
+
+    const temp = weather?.temp ?? NaN
+    const condition = loading
+      ? "Loading..."
+      : weather?.description ?? "No data"
+    const icon = weather?.icon ?? "☀️"
+
+    return (
+      <WeatherCard
+        isLocal={isLocal}
+        city={meta.city}
+        country={meta.country}
+        countryCode={meta.countryCode}
+        temperature={temp}
+        feelsLike={undefined}
+        condition={condition}
+        icon={icon}
+        rainChance={weather?.rainChance}
+        uvIndex={weather?.uvIndex}
+        windKph={weather?.windKph}
+        onRemove={!isLocal ? () => handleRemoveCity(meta.id) : undefined}
+        onPressDetails={undefined}
+      />
+    )
+  }
 
   if (locError) {
     return (
@@ -160,42 +294,24 @@ export default function WeatherScreen() {
     )
   }
 
-  const isPurple = true // se um dia quiser um toggle de unidades (°C/°F), dá para usar isso
+  const modalListData = search.trim()
+    ? searchResults
+    : filterOutExisting(POPULAR_CITIES)
 
-  function handleRemoveCity(id: string) {
-    setSelectedCityIds((prev) => prev.filter((cid) => cid !== id))
-  }
-
-  function handleAddCity(id: string) {
-    setSelectedCityIds((prev) => [...prev, id])
-    setIsModalVisible(false)
-    setSearch("")
-  }
+  const isPurple = true
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Current Weather</Text>
 
-      <WeatherCard
-        isLocal
-        city={localCity.city}
-        country={localCity.country}
-        countryCode={localCity.countryCode}
-        temperature={localCity.temperature}
-        feelsLike={localCity.feelsLike}
-        condition={localCity.condition}
-        icon={localCity.icon}
-        rainChance={localCity.rainChance}
-        uvIndex={localCity.uvIndex}
-        windKph={localCity.windKph}
-      />
+      {renderWeatherCard(localCity, true)}
 
       <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
         Comparison
       </Text>
 
       <FlatList
-        data={comparisonCities}
+        data={cities}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 32 }}
         ListEmptyComponent={() => (
@@ -214,25 +330,9 @@ export default function WeatherScreen() {
             </TouchableOpacity>
           </View>
         )}
-        renderItem={({ item }) => (
-          <WeatherCard
-            city={item.city}
-            country={item.country}
-            countryCode={item.countryCode}
-            temperature={item.temperature}
-            feelsLike={item.feelsLike}
-            condition={item.condition}
-            icon={item.icon}
-            rainChance={item.rainChance}
-            uvIndex={item.uvIndex}
-            windKph={item.windKph}
-            onRemove={() => handleRemoveCity(item.id)}
-            // onPressDetails={() => { /* no futuro: forecast detalhado */ }}
-          />
-        )}
+        renderItem={({ item }) => renderWeatherCard(item)}
       />
 
-      {/* Modal: adicionar cidade */}
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -250,20 +350,41 @@ export default function WeatherScreen() {
               onChangeText={setSearch}
             />
 
+            {searchLoading && (
+              <View style={{ paddingVertical: 8 }}>
+                <ActivityIndicator size="small" color="#705ADF" />
+              </View>
+            )}
+
+            {searchError && (
+              <Text style={{ color: "red", marginBottom: 8 }}>{searchError}</Text>
+            )}
+
             <FlatList
-              data={availableForAdd}
+              data={modalListData}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalItem}
-                  onPress={() => handleAddCity(item.id)}
+                  onPress={() => handleAddCity(item)}
                 >
                   <Text style={styles.modalItemText}>
                     {item.country}, {item.city}
                   </Text>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                !searchLoading
+                  ? () => (
+                      <Text style={{ color: "#666", marginTop: 8 }}>
+                        {search.trim()
+                          ? `No results for "${search}"`
+                          : "All suggested cities are already added."}
+                      </Text>
+                    )
+                  : null
+              }
             />
 
             <TouchableOpacity
@@ -309,7 +430,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 999,
   },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",

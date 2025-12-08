@@ -11,10 +11,10 @@ type WeatherCardProps = {
   city: string
   country: string
   countryCode: string
-  temperature: number  // °C
-  condition: string    // ex: "Sunny", "Cloudy"
-  icon?: string        // emoji, ex: "☀️"
-  rainChance?: number  // %
+  temperature: number  
+  condition: string 
+  icon?: string
+  rainChance?: number
   uvIndex?: number
   windKph?: number
   feelsLike?: number
@@ -81,7 +81,6 @@ export function WeatherCard({
   }, [windKph])
 
   const travelHint = useMemo(() => {
-    // super simples por enquanto, mas já útil
     if (!hasDetails) return undefined
 
     const temp = temperature
@@ -260,7 +259,6 @@ const styles = StyleSheet.create({
     color: "#333",
   },
 
-  // Accordion
   detailsToggleRow: {
     flexDirection: "row",
     alignItems: "center",

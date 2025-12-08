@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export interface Location {
   id: string
-  name: string       // ex: "São Paulo, BR" ou "New York, US"
+  name: string  
   latitude: number
   longitude: number
 }
@@ -20,19 +20,16 @@ export function LocationsProvider({ children }: { children: ReactNode }) {
   const [locations, setLocations] = useState<Location[]>([])
 
   useEffect(() => {
-    // ao iniciar, carrega do AsyncStorage
     AsyncStorage.getItem('@app:locations').then(json => {
       if (json) setLocations(JSON.parse(json))
     })
   }, [])
 
   useEffect(() => {
-    // persiste sempre que mudar locations
     AsyncStorage.setItem('@app:locations', JSON.stringify(locations))
   }, [locations])
 
   const addLocation = (loc: Location) => {
-    // evitar duplicados
     if (!locations.some(l => l.id === loc.id)) {
       setLocations(prev => [...prev, loc])
     }

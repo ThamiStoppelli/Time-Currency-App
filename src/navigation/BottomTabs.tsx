@@ -1,4 +1,3 @@
-// BottomTabs.tsx
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import TimeScreen from '../screens/TimeScreen'

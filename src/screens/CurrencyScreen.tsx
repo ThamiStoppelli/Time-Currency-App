@@ -1,4 +1,3 @@
-// src/screens/CurrencyScreen.tsx
 import React, { useEffect, useState, useMemo } from "react"
 import {
   View,
@@ -13,15 +12,14 @@ import {
 import { useCurrentLocation } from "../hooks/useLocation"
 import { CurrencyCard } from "../components/CurrencyCard"
 import { PlusIcon } from "../assets/svgs/plus-icon"
+import { fetchRates } from "../services/currencyApi"
 
-// metadados de moedas mockadas
 type CurrencyMeta = {
-  code: string       // ex: "BRL"
-  country: string    // ex: "Brazil"
-  countryCode: string // ex: "BR"
-  name: string       // ex: "Real"
-  symbol: string     // ex: "R$"
-  rateToUSD: number  // 1 unidade dessa moeda = X USD
+  code: string
+  country: string
+  countryCode: string
+  name: string
+  symbol: string
 }
 
 const CURRENCIES: CurrencyMeta[] = [
@@ -31,7 +29,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "BR",
     name: "Real",
     symbol: "R$",
-    rateToUSD: 0.18,
   },
   {
     code: "USD",
@@ -39,7 +36,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "US",
     name: "Dollar",
     symbol: "$",
-    rateToUSD: 1,
   },
   {
     code: "EUR",
@@ -47,7 +43,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "DE",
     name: "Euro",
     symbol: "€",
-    rateToUSD: 1.08,
   },
   {
     code: "GBP",
@@ -55,7 +50,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "GB",
     name: "Pound",
     symbol: "£",
-    rateToUSD: 1.25,
   },
   {
     code: "PEN",
@@ -63,7 +57,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "PE",
     name: "Sol",
     symbol: "S/",
-    rateToUSD: 0.27,
   },
   {
     code: "PYG",
@@ -71,7 +64,6 @@ const CURRENCIES: CurrencyMeta[] = [
     countryCode: "PY",
     name: "Guarani",
     symbol: "₲",
-    rateToUSD: 0.00013,
   },
 ]
 
@@ -79,35 +71,25 @@ function getCurrencyMeta(code: string): CurrencyMeta | undefined {
   return CURRENCIES.find((c) => c.code === code)
 }
 
-// converte baseUSD → amount na moeda
-function amountForCurrency(baseUSD: number, meta: CurrencyMeta): number {
-  if (meta.rateToUSD === 0) return 0
-  return baseUSD / meta.rateToUSD
-}
-
 export default function CurrencyScreen() {
   const { coords, error: locError } = useCurrentLocation()
 
-  // sempre mantemos: vetor de códigos, onde o primeiro é o "From"
   const [selectedCodes, setSelectedCodes] = useState<string[]>(["BRL", "USD", "EUR"])
-  // valor base em USD que usamos para calcular todas as moedas
-  const [baseUSD, setBaseUSD] = useState<number>(100)
 
-  // modal + busca
+  const [baseAmount, setBaseAmount] = useState<number>(100)
+
+  const [rates, setRates] = useState<Record<string, number>>({})
+  const [loadingRates, setLoadingRates] = useState(false)
+
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [search, setSearch] = useState("")
 
-  // loading/location mock
   const [loadingLocal, setLoadingLocal] = useState(true)
   const [localCurrencyCode, setLocalCurrencyCode] = useState<string>("BRL")
 
-  // descobre moeda local (mock por enquanto)
   useEffect(() => {
-    // aqui poderíamos usar coords → país → moeda
-    // por enquanto: se tem coords, assume BRL
     if (coords) {
       setLocalCurrencyCode("BRL")
-      // opcional: garantir que BRL seja o primeiro
       setSelectedCodes((prev) => {
         if (prev.includes("BRL")) {
           const without = prev.filter((c) => c !== "BRL")
@@ -124,7 +106,6 @@ export default function CurrencyScreen() {
 
   const fromMeta = useMemo(() => getCurrencyMeta(fromCode), [fromCode])
 
-  // moedas disponíveis no modal (as que ainda não foram selecionadas)
   const availableForAdd = useMemo(
     () =>
       CURRENCIES.filter(
@@ -136,6 +117,25 @@ export default function CurrencyScreen() {
       ),
     [search, selectedCodes]
   )
+
+  useEffect(() => {
+    async function loadRates() {
+      if (!fromCode || toCodes.length === 0) {
+        setRates({})
+        return
+      }
+      try {
+        setLoadingRates(true)
+        const res = await fetchRates(fromCode, toCodes)
+        setRates(res.rates ?? {})
+      } catch (err) {
+        console.error("Erro ao buscar taxas", err)
+      } finally {
+        setLoadingRates(false)
+      }
+    }
+    loadRates()
+  }, [fromCode, toCodes.join(",")])
 
   if (locError) {
     return (
@@ -153,41 +153,56 @@ export default function CurrencyScreen() {
     )
   }
 
-  const isPurple = true // se depois quiser um toggle AM/PM aqui também, dá pra usar
+  const isPurple = true
 
-  // handler: quando o usuário muda o valor em qualquer card
   function handleChangeAmountForCurrency(code: string, valueStr: string) {
-    // troca vírgula por ponto para aceitar "250,50"
     const normalized = valueStr.replace(",", ".")
     const amount = parseFloat(normalized)
+    
     if (isNaN(amount)) {
-      // se usuário apagar tudo, podemos considerar 0
-      setBaseUSD(0)
+      setBaseAmount(0)
       return
     }
 
-    const meta = getCurrencyMeta(code)
-    if (!meta) return
+    if (code === fromCode) {
+      setBaseAmount(amount)
+      return
+    }
 
-    // amount * rateToUSD = USD
-    const newBaseUSD = amount * meta.rateToUSD
-    setBaseUSD(newBaseUSD)
+    const rate = rates[code]
+    if (!rate) return
+    const newBase = amount / rate
+    setBaseAmount(newBase)
   }
 
-  // handler: remover uma moeda (somente To)
+    function getAmountTextByCode(code: string): string {
+    if (code === fromCode) {
+      return baseAmount.toFixed(2)
+    }
+    const rate = rates[code]
+    if (!rate) return "--"
+    const converted = baseAmount * rate
+    return converted.toFixed(2)
+  }
+
   function handleRemoveCurrency(code: string) {
     setSelectedCodes((prev) => prev.filter((c) => c !== code))
   }
 
-  // handler: adicionar moeda (do modal)
   function handleAddCurrency(code: string) {
     setSelectedCodes((prev) => [...prev, code])
     setIsModalVisible(false)
     setSearch("")
   }
 
-  // handler: swap entre From e um To
   function handleSwapWithFrom(code: string) {
+    if (code === fromCode) return
+    const rate = rates[code]
+    if (!rate) return
+
+    const amountInTarget = baseAmount * rate
+    setBaseAmount(amountInTarget)
+
     setSelectedCodes((prev) => {
       const index = prev.indexOf(code)
       if (index <= 0) return prev
@@ -199,18 +214,8 @@ export default function CurrencyScreen() {
     })
   }
 
-  // valor exibido para cada card como string
-  function getAmountTextByCode(code: string): string {
-    const meta = getCurrencyMeta(code)
-    if (!meta) return ""
-    const amount = amountForCurrency(baseUSD, meta)
-    // formato simples com 2 casas decimais
-    return amount.toFixed(2)
-  }
-
   return (
     <View style={styles.container}>
-      {/* FROM SECTION */}
       <Text style={styles.sectionTitle}>From</Text>
 
       <CurrencyCard
@@ -222,10 +227,8 @@ export default function CurrencyScreen() {
         currencySymbol={fromMeta.symbol}
         amountText={getAmountTextByCode(fromMeta.code)}
         onChangeAmount={(value) => handleChangeAmountForCurrency(fromMeta.code, value)}
-        // a troca com To é feita a partir dos cards "To", então aqui não tem onSwap
       />
 
-      {/* TO SECTION */}
       <Text style={[styles.sectionTitle, { marginTop: 16 }]}>To</Text>
 
       <FlatList
@@ -268,7 +271,6 @@ export default function CurrencyScreen() {
         }}
       />
 
-      {/* MODAL DE ADIÇÃO DE MOEDA */}
       <Modal
         visible={isModalVisible}
         animationType="slide"
@@ -345,7 +347,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 999,
   },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
