@@ -13,59 +13,7 @@ import { useCurrentLocation } from "../hooks/useLocation"
 import { CurrencyCard } from "../components/CurrencyCard"
 import { PlusIcon } from "../assets/svgs/plus-icon"
 import { fetchRates } from "../services/currencyApi"
-
-type CurrencyMeta = {
-  code: string
-  country: string
-  countryCode: string
-  name: string
-  symbol: string
-}
-
-const CURRENCIES: CurrencyMeta[] = [
-  {
-    code: "BRL",
-    country: "Brazil",
-    countryCode: "BR",
-    name: "Real",
-    symbol: "R$",
-  },
-  {
-    code: "USD",
-    country: "USA",
-    countryCode: "US",
-    name: "Dollar",
-    symbol: "$",
-  },
-  {
-    code: "EUR",
-    country: "Germany",
-    countryCode: "DE",
-    name: "Euro",
-    symbol: "€",
-  },
-  {
-    code: "GBP",
-    country: "United Kingdom",
-    countryCode: "GB",
-    name: "Pound",
-    symbol: "£",
-  },
-  {
-    code: "PEN",
-    country: "Peru",
-    countryCode: "PE",
-    name: "Sol",
-    symbol: "S/",
-  },
-  {
-    code: "PYG",
-    country: "Paraguay",
-    countryCode: "PY",
-    name: "Guarani",
-    symbol: "₲",
-  },
-]
+import { CURRENCIES, CurrencyMeta } from "../data/currencyMeta"
 
 function getCurrencyMeta(code: string): CurrencyMeta | undefined {
   return CURRENCIES.find((c) => c.code === code)
