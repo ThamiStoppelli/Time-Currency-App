@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { TrashIcon } from '../assets/svgs/trash-icon';
+import { TrashIcon } from '../../assets/svgs/trash-icon';
 
 type TimeCardProps = {
   city: string

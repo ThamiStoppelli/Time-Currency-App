@@ -10,9 +10,9 @@ import {
   Modal,
 } from "react-native"
 import Toggle from "../components/Toggle"
-import { PlusIcon } from "../assets/svgs/plus-icon"
-import { CloseIcon } from "../assets/svgs/close-icon"
-import { SyncIcon } from "../assets/svgs/sync-icon"
+import { PlusIcon } from "../../assets/svgs/plus-icon"
+import { CloseIcon } from "../../assets/svgs/close-icon"
+import { SyncIcon } from "../../assets/svgs/sync-icon"
 import { TimeCard } from "../components/TimeCard"
 import { searchCities, GeoCityResult } from "../services/geocodingApi"
 import { useSyncedSelection, BasicLocation } from "../context/SyncedSelectionContext"

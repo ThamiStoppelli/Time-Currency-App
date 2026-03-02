@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native"
-import { TrashIcon } from "../assets/svgs/trash-icon"
+import { TrashIcon } from "../../assets/svgs/trash-icon"
 
 type WeatherCardProps = {
   city: string

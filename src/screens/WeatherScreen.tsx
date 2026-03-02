@@ -11,9 +11,9 @@ import {
 } from "react-native"
 
 import { WeatherCard } from "../components/WeatherCard"
-import { PlusIcon } from "../assets/svgs/plus-icon"
-import { CloseIcon } from "../assets/svgs/close-icon"
-import { SyncIcon } from "../assets/svgs/sync-icon"
+import { PlusIcon } from "../../assets/svgs/plus-icon"
+import { CloseIcon } from "../../assets/svgs/close-icon"
+import { SyncIcon } from "../../assets/svgs/sync-icon"
 import { useCurrentLocation } from "../hooks/useLocation"
 import { fetchWeather, WeatherData } from "../services/weatherApi"
 import { searchCities, GeoCityResult } from "../services/geocodingApi"

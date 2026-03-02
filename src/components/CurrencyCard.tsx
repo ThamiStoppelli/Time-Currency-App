@@ -1,7 +1,7 @@
 import React from "react"
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native"
-import { TrashIcon } from "../assets/svgs/trash-icon"
-import { SwitchIcon } from "../assets/svgs/switch-icon"
+import { TrashIcon } from "../../assets/svgs/trash-icon"
+import { SwitchIcon } from "../../assets/svgs/switch-icon"
 
 type CurrencyCardProps = {
   isFrom?: boolean
