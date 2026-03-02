@@ -12,19 +12,23 @@ import {
 import { useCurrentLocation } from "../hooks/useLocation"
 import { CurrencyCard } from "../components/CurrencyCard"
 import { PlusIcon } from "../assets/svgs/plus-icon"
+import { CloseIcon } from "../assets/svgs/close-icon"
 import { fetchRates } from "../services/currencyApi"
 import { CURRENCIES, CurrencyMeta } from "../data/currencyMeta"
+import { getJSON, setJSON } from "../storage/storage"
 
 function getCurrencyMeta(code: string): CurrencyMeta | undefined {
   return CURRENCIES.find((c) => c.code === code)
 }
 
+const STORAGE_CURRENCY_CODES = "currency:codes:v1"
+const STORAGE_CURRENCY_AMOUNT = "currency:amount:v1"
+
 export default function CurrencyScreen() {
   const { coords, error: locError } = useCurrentLocation()
-
   const [selectedCodes, setSelectedCodes] = useState<string[]>(["BRL", "USD", "EUR"])
-
   const [baseAmount, setBaseAmount] = useState<number>(100)
+  const [hydrated, setHydrated] = useState(false)
 
   const [rates, setRates] = useState<Record<string, number>>({})
   const [loadingRates, setLoadingRates] = useState(false)
@@ -35,19 +39,52 @@ export default function CurrencyScreen() {
   const [loadingLocal, setLoadingLocal] = useState(true)
   const [localCurrencyCode, setLocalCurrencyCode] = useState<string>("BRL")
 
+  // hydrate
   useEffect(() => {
+    let cancelled = false
+    async function hydrate() {
+      const savedCodes = await getJSON<string[]>(
+        STORAGE_CURRENCY_CODES,
+        ["BRL", "USD", "EUR"]
+      )
+      const savedAmount = await getJSON<number>(STORAGE_CURRENCY_AMOUNT, 100)
+
+      if (!cancelled) {
+        setSelectedCodes(savedCodes)
+        setBaseAmount(savedAmount)
+        setHydrated(true)
+      }
+    }
+    hydrate()
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+
     if (coords) {
       setLocalCurrencyCode("BRL")
-      setSelectedCodes((prev) => {
-        if (prev.includes("BRL")) {
-          const without = prev.filter((c) => c !== "BRL")
-          return ["BRL", ...without]
-        }
+
+      setSelectedCodes(prev => {
+        if (prev.includes("BRL")) return prev
         return ["BRL", ...prev]
       })
     }
+
     setLoadingLocal(false)
-  }, [coords])
+  }, [coords, hydrated])
+
+  // persist selectedCodes
+  useEffect(() => {
+    if (!hydrated) return
+    setJSON(STORAGE_CURRENCY_CODES, selectedCodes)
+  }, [hydrated, selectedCodes])
+
+  // persist baseAmount
+  useEffect(() => {
+    if (!hydrated) return
+    setJSON(STORAGE_CURRENCY_AMOUNT, baseAmount)
+  }, [hydrated, baseAmount])
 
   const fromCode = selectedCodes[0]
   const toCodes = selectedCodes.slice(1)
@@ -93,7 +130,7 @@ export default function CurrencyScreen() {
     )
   }
 
-  if (loadingLocal || !fromMeta) {
+  if (loadingLocal || !fromMeta || !hydrated) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#705ADF" />
@@ -123,7 +160,7 @@ export default function CurrencyScreen() {
     setBaseAmount(newBase)
   }
 
-    function getAmountTextByCode(code: string): string {
+  function getAmountTextByCode(code: string): string {
     if (code === fromCode) {
       return baseAmount.toFixed(2)
     }
@@ -177,7 +214,11 @@ export default function CurrencyScreen() {
         onChangeAmount={(value) => handleChangeAmountForCurrency(fromMeta.code, value)}
       />
 
-      <Text style={[styles.sectionTitle, { marginTop: 16 }]}>To</Text>
+            <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionTitle, { marginTop: 16, marginBottom: 0 }]}>
+          To
+        </Text>
+      </View>
 
       <FlatList
         data={toCodes}
@@ -227,7 +268,14 @@ export default function CurrencyScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add currency</Text>
+            {/* <Text style={styles.modalTitle}>Add currency</Text> */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add currency</Text>
+
+              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+                <CloseIcon size={18} />
+              </TouchableOpacity>
+            </View>
 
             <TextInput
               style={styles.modalInput}
@@ -256,7 +304,7 @@ export default function CurrencyScreen() {
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseButtonText}>Close</Text>
+              <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -308,10 +356,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 12,
+    // marginBottom: 12,
+  },
+  modalXButton: {
+    padding: 8,
+    borderRadius: 999,
   },
   modalInput: {
     borderColor: "#ccc",
@@ -337,5 +395,12 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: "#FFF",
     fontWeight: "500",
+  },
+    sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 4,
   },
 })

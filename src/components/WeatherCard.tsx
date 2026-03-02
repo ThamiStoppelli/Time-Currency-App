@@ -202,11 +202,11 @@ export function WeatherCard({
 const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start", /* "center" */
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: "#F4F4F7",
+    backgroundColor: "#fff", /* #F4F4F7 */
     marginBottom: 10,
   },
   localCard: {
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
   leftColumn: {
     alignItems: "center",
     marginRight: 10,
+    paddingTop: 2,
   },
   flag: {
     fontSize: 22,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#ECECF4",
+    backgroundColor: "#d0cadb75",
   },
   detailLine: {
     flexDirection: "row",

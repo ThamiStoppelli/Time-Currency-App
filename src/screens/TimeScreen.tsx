@@ -11,8 +11,12 @@ import {
 } from "react-native"
 import Toggle from "../components/Toggle"
 import { PlusIcon } from "../assets/svgs/plus-icon"
+import { CloseIcon } from "../assets/svgs/close-icon"
+import { SyncIcon } from "../assets/svgs/sync-icon"
 import { TimeCard } from "../components/TimeCard"
 import { searchCities, GeoCityResult } from "../services/geocodingApi"
+import { useSyncedSelection, BasicLocation } from "../context/SyncedSelectionContext"
+import { getJSON, setJSON } from "../storage/storage"
 
 type TimeCity = {
   id: string
@@ -31,18 +35,18 @@ const INITIAL_COMPARISON_CITIES: TimeCity[] = [
     timezone: "America/New_York",
   },
   {
-    id: "la-America/Los_Angeles",
-    city: "Los Angeles",
-    country: "USA",
-    countryCode: "US",
-    timezone: "America/Los_Angeles",
-  },
-  {
     id: "berlin-Europe/Berlin",
     city: "Berlin",
     country: "Germany",
     countryCode: "DE",
     timezone: "Europe/Berlin",
+  },
+  {
+    id: "la-America/Los_Angeles",
+    city: "Los Angeles",
+    country: "USA",
+    countryCode: "US",
+    timezone: "America/Los_Angeles",
   },
 ]
 
@@ -98,6 +102,9 @@ const POPULAR_TIME_CITIES: TimeCity[] = [
   },
 ]
 
+const STORAGE_TIME_CITIES = "time:cities:v1"
+const STORAGE_TIME_MODE24 = "time:mode24h:v1"
+
 function formatTimeForZone(zone: string, mode24h: boolean, now: Date): string {
   try {
     return new Intl.DateTimeFormat(undefined, {
@@ -144,6 +151,10 @@ function offsetLabelForZone(zone: string, now: Date): string {
   }
 }
 
+function hasTimezone(r: GeoCityResult): r is GeoCityResult & { timezone: string } {
+  return !!r.timezone
+}
+
 export default function TimeScreen() {
   const [mode24h, setMode24h] = useState(false)
   const [now, setNow] = useState<Date>(new Date())
@@ -151,8 +162,8 @@ export default function TimeScreen() {
   const [localZone, setLocalZone] = useState<string | null>(null)
   const [localCountryCode, setLocalCountryCode] = useState<string>("")
   const [loadingLocal, setLoadingLocal] = useState(true)
-
   const [cities, setCities] = useState<TimeCity[]>(INITIAL_COMPARISON_CITIES)
+  const [hydrated, setHydrated] = useState(false)
 
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [citySearch, setCitySearch] = useState("")
@@ -160,9 +171,43 @@ export default function TimeScreen() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
+  const { syncedLocations, sourceScreen, version, setSynced } = useSyncedSelection()
+
+  // hydrate
   useEffect(() => {
     let cancelled = false
+    async function hydrate() {
+      const savedCities = await getJSON<TimeCity[]>(
+        STORAGE_TIME_CITIES,
+        INITIAL_COMPARISON_CITIES
+      )
+      const savedMode24 = await getJSON<boolean>(STORAGE_TIME_MODE24, false)
 
+      if (!cancelled) {
+        setCities(savedCities)
+        setMode24h(savedMode24)
+        setHydrated(true)
+      }
+    }
+    hydrate()
+    return () => { cancelled = true }
+  }, [])
+
+  // persist cities
+  useEffect(() => {
+    if (!hydrated) return
+    setJSON(STORAGE_TIME_CITIES, cities)
+  }, [hydrated, cities])
+
+  // mode24h
+  useEffect(() => {
+    if (!hydrated) return
+    setJSON(STORAGE_TIME_MODE24, mode24h)
+  }, [hydrated, mode24h])
+
+  // desobrir fuso do device (localZone)
+  useEffect(() => {
+    let cancelled = false
     async function init() {
       try {
         const tzUser = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -190,9 +235,7 @@ export default function TimeScreen() {
         }
       }
     }
-
     init()
-
     return () => {
       cancelled = true
     }
@@ -205,6 +248,51 @@ export default function TimeScreen() {
 
     return () => clearInterval(id)
   }, [])
+
+  // sync locations
+  useEffect(() => {
+    let cancelled = false
+
+    async function applySyncedFromOthers() {
+      if (!syncedLocations.length) return
+      if (sourceScreen === "time") return
+
+      const mapped: TimeCity[] = []
+
+      for (const loc of syncedLocations) {
+        const query = loc.city ?? loc.country
+        if (!query) continue
+
+        try {
+          const results = await searchCities(query)
+          const best = results.find(hasTimezone)
+          if (!best) continue
+
+          mapped.push({
+            id: `${best.name}-${best.timezone}`,
+            city: best.name,
+            country: best.country,
+            countryCode: best.country_code,
+            timezone: best.timezone,
+          })
+        } catch (e) {
+          console.warn("Erro ao aplicar syncedLocations no TimeScreen", e)
+        }
+      }
+
+      if (cancelled) return
+
+      const localCityPart = localZone?.split("/")[1]?.replaceAll("_", " ")
+      const filtered = mapped.filter(c =>
+        localCityPart ? c.city.toLowerCase() !== localCityPart.toLowerCase() : true
+      )
+
+      if (filtered.length > 0) setCities(filtered)
+    }
+
+    applySyncedFromOthers()
+    return () => { cancelled = true }
+  }, [version])
 
   useEffect(() => {
     if (!isModalVisible) return
@@ -234,9 +322,10 @@ export default function TimeScreen() {
 
       const results = await searchCities(query)
 
-      const mapped: TimeCity[] = results
-        .filter((r: GeoCityResult) => !!r.timezone)
-        .map((r: GeoCityResult) => ({
+      const withTimezone = results.filter(hasTimezone)
+
+      const mapped: TimeCity[] = withTimezone
+        .map((r) => ({
           id: `${r.name}-${r.timezone}`,
           city: r.name,
           country: r.country,
@@ -281,7 +370,16 @@ export default function TimeScreen() {
     )
   }
 
-  if (loadingLocal) {
+  function handleSyncWithApp() {
+    const toSync = cities.map(c => ({
+      city: c.city,
+      country: c.country,
+      countryCode: c.countryCode,
+    }))
+    setSynced("time", toSync)
+  }
+
+  if (loadingLocal || !hydrated) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#705ADF" />
@@ -331,7 +429,19 @@ export default function TimeScreen() {
         isLocal
       />
 
-      <Text style={[styles.title, { marginTop: 16 }]}>Comparison</Text>
+      <View style={styles.comparisonHeaderRow}>
+        <Text style={[styles.title, { marginTop: 16, marginBottom: 0 }]}>
+          Comparison
+        </Text>
+
+        <TouchableOpacity
+          style={styles.syncButton}
+          onPress={handleSyncWithApp}
+        >
+          <SyncIcon size={14} />
+          <Text style={styles.syncButtonText}>Sync</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={cities}
@@ -364,7 +474,14 @@ export default function TimeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add city</Text>
+            {/* <Text style={styles.modalTitle}>Add city</Text> */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add city</Text>
+
+              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+                <CloseIcon size={18} />
+              </TouchableOpacity>
+            </View>
 
             <TextInput
               style={styles.modalInput}
@@ -416,7 +533,7 @@ export default function TimeScreen() {
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseButtonText}>Close</Text>
+              <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -474,10 +591,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 12,
+    // marginBottom: 12,
+  },
+  modalXButton: {
+    padding: 8,
+    borderRadius: 999,
   },
   modalInput: {
     borderColor: "#ccc",
@@ -503,5 +630,26 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: "#FFF",
     fontWeight: "500",
+  },
+    comparisonHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  syncButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#705ADF",
+  },
+  syncButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 12,
   },
 })

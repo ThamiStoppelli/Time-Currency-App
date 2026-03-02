@@ -12,9 +12,13 @@ import {
 
 import { WeatherCard } from "../components/WeatherCard"
 import { PlusIcon } from "../assets/svgs/plus-icon"
+import { CloseIcon } from "../assets/svgs/close-icon"
+import { SyncIcon } from "../assets/svgs/sync-icon"
 import { useCurrentLocation } from "../hooks/useLocation"
 import { fetchWeather, WeatherData } from "../services/weatherApi"
 import { searchCities, GeoCityResult } from "../services/geocodingApi"
+import { useSyncedSelection, BasicLocation } from "../context/SyncedSelectionContext"
+import { getJSON, setJSON } from "../storage/storage"
 
 type SavedCity = {
   id: string
@@ -23,15 +27,6 @@ type SavedCity = {
   countryCode: string
   lat: number
   lon: number
-}
-
-const INITIAL_LOCAL_CITY: SavedCity = {
-  id: "fortaleza--3.7319--38.5267",
-  city: "Fortaleza",
-  country: "Brazil",
-  countryCode: "BR",
-  lat: -3.7319,
-  lon: -38.5267,
 }
 
 const INITIAL_COMPARISON_CITIES: SavedCity[] = [
@@ -120,18 +115,21 @@ const POPULAR_CITIES: SavedCity[] = [
   },
 ]
 
+const STORAGE_WEATHER_CITIES = "weather:cities:v1"
+
 export default function WeatherScreen() {
   const { coords, error: locError } = useCurrentLocation()
+  const [hydrated, setHydrated] = useState(false)
 
   const [loadingLocal, setLoadingLocal] = useState(true)
-
-  const [localCity, setLocalCity] = useState<SavedCity | null>(
-    INITIAL_LOCAL_CITY
-  )
+  const [localCity, setLocalCity] = useState<SavedCity | null>(null)
+  
   const [cities, setCities] = useState<SavedCity[]>(INITIAL_COMPARISON_CITIES)
 
   const [weatherById, setWeatherById] = useState<Record<string, WeatherData | null>>({})
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
+
+  const { syncedLocations, sourceScreen, version, setSynced } = useSyncedSelection()
 
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [search, setSearch] = useState("")
@@ -139,10 +137,59 @@ export default function WeatherScreen() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
+  // hydrate
   useEffect(() => {
-    // aqui depois dá pra usar coords -> reverse geocoding e setar localCity dinamicamente
-    setLoadingLocal(false)
-  }, [coords])
+    let cancelled = false
+    async function hydrate() {
+      const saved = await getJSON<SavedCity[]>(STORAGE_WEATHER_CITIES, INITIAL_COMPARISON_CITIES)
+      if (!cancelled) {
+        setCities(saved)
+        setHydrated(true)
+      }
+    }
+    hydrate()
+    return () => { cancelled = true }
+  }, [])
+
+  // save cities
+  useEffect(() => {
+    if (!hydrated) return
+    setJSON(STORAGE_WEATHER_CITIES, cities)
+  }, [hydrated, cities])
+
+  useEffect(() => {
+    let cancelled = false
+    async function init() {
+      try {
+        const tzUser = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const cityPart = tzUser?.split("/").pop()?.replaceAll("_", " ")
+        if (!cityPart) throw new Error("No city part from timezone")
+
+        const results = await searchCities(cityPart)
+        const first = results[0]
+        if (!first) throw new Error("No geocoding results")
+
+        const next: SavedCity = {
+          id: `${first.name}-${first.latitude}-${first.longitude}`,
+          city: first.name,
+          country: first.country,
+          countryCode: first.country_code,
+          lat: first.latitude,
+          lon: first.longitude,
+        }
+
+        if (!cancelled) setLocalCity(next)
+      } catch (e) {
+        console.warn("Could not resolve local city for weather", e)
+        if (!cancelled) setLocalCity(null)
+      } finally {
+        if (!cancelled) setLoadingLocal(false)
+      }
+    }
+
+    init()
+    return () => { cancelled = true }
+  }, [])
 
   function filterOutExisting(list: SavedCity[]): SavedCity[] {
     const allIds = new Set<string>([
@@ -193,6 +240,47 @@ export default function WeatherScreen() {
       }
     })
   }, [cities.map(c => c.id).join(","), weatherById])
+
+  // sync
+  useEffect(() => {
+    let cancelled = false
+
+    async function applySyncedFromOthers() {
+      if (!syncedLocations.length) return
+      if (sourceScreen === "weather") return
+
+      const mapped: SavedCity[] = []
+
+      for (const loc of syncedLocations) {
+        const query = loc.city ?? loc.country
+        if (!query) continue
+
+        try {
+          const results = await searchCities(query)
+          const best = results[0]
+          if (!best) continue
+
+          mapped.push({
+            id: `${best.name}-${best.latitude}-${best.longitude}`,
+            city: best.name,
+            country: best.country,
+            countryCode: best.country_code,
+            lat: best.latitude,
+            lon: best.longitude,
+          })
+        } catch (e) {
+          console.warn("Erro ao aplicar syncedLocations no WeatherScreen", e)
+        }
+      }
+
+      if (!cancelled && mapped.length > 0) {
+        setCities(mapped)
+      }
+    }
+
+    applySyncedFromOthers()
+    return () => { cancelled = true }
+  }, [version, syncedLocations, sourceScreen])
 
   useEffect(() => {
     if (!isModalVisible) return
@@ -286,7 +374,7 @@ export default function WeatherScreen() {
     )
   }
 
-  if (loadingLocal || !localCity) {
+  if (loadingLocal || !localCity || !hydrated) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#705ADF" />
@@ -298,17 +386,33 @@ export default function WeatherScreen() {
     ? searchResults
     : filterOutExisting(POPULAR_CITIES)
 
-  const isPurple = true
+  const isPurple = true // celcius | farenheit
+
+  function handleSyncWithApp() {
+    const toSync = cities.map(c => ({
+      city: c.city,
+      country: c.country,
+      countryCode: c.countryCode,
+    }))
+    setSynced("weather", toSync)
+  }
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Current Weather</Text>
-
       {renderWeatherCard(localCity, true)}
 
-      <Text style={[styles.sectionTitle, { marginTop: 16 }]}>
-        Comparison
-      </Text>
+      <View style={styles.comparisonHeaderRow}>
+        <Text style={styles.sectionTitle}>Comparison</Text>
+
+        <TouchableOpacity
+          style={styles.syncButton}
+          onPress={handleSyncWithApp}
+        >
+          <SyncIcon size={14} />
+          <Text style={styles.syncButtonText}>Sync</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={cities}
@@ -341,7 +445,14 @@ export default function WeatherScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add city</Text>
+            {/* <Text style={styles.modalTitle}>Add city</Text> */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add city</Text>
+
+              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+                <CloseIcon size={18} />
+              </TouchableOpacity>
+            </View>
 
             <TextInput
               style={styles.modalInput}
@@ -391,7 +502,7 @@ export default function WeatherScreen() {
               style={styles.modalCloseButton}
               onPress={() => setIsModalVisible(false)}
             >
-              <Text style={styles.modalCloseButtonText}>Close</Text>
+              <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -443,10 +554,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 12,
+    // marginBottom: 12,
+  },
+  modalXButton: {
+    padding: 8,
+    borderRadius: 999,
   },
   modalInput: {
     borderColor: "#ccc",
@@ -472,5 +593,26 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: "#FFF",
     fontWeight: "500",
+  },
+    comparisonHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  syncButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#705ADF",
+  },
+  syncButtonText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 12,
   },
 })

@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "TimeCurrencyApp",
-    "slug": "TimeCurrencyApp",
+    "slug": "time-currency-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "timecurrencyapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/logo.png",
       "resizeMode": "contain",
@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.thamiresstoppelli.timecurrencyapp"
     },
     "web": {
       "bundler": "metro",
@@ -35,7 +36,11 @@
       "typedRoutes": true
     },
     "extra": {
-      "OPENWEATHER_KEY": "process.env.OPENWEATHER_KEY"
+      "OPENWEATHER_KEY": "",
+      "router": {},
+      "eas": {
+        "projectId": "ffe5a7df-2fd7-42ca-9264-eab00046d38e"
+      }
     }
   }
 }
