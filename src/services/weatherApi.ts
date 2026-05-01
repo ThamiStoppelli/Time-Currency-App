@@ -20,6 +20,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
       longitude: lon,
       current_weather: true,
       hourly: "precipitation_probability,uv_index,wind_speed_10m",
+      timezone: "auto",
     },
   })
 
@@ -30,13 +31,33 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
   const icon = weatherCodeToEmoji(code)
   const description = weatherCodeToText(code)
 
+  const hourlyTimes: string[] = data.hourly?.time ?? []
+  const currentTime: string | undefined = current.time
+
+  let hourIndex = -1
+
+  if (currentTime) {
+    hourIndex = hourlyTimes.indexOf(currentTime)
+  }
+
+  if (hourIndex < 0 && currentTime && hourlyTimes.length > 0) {
+    const currentMs = new Date(currentTime).getTime()
+
+    hourIndex = hourlyTimes.findIndex((t) => {
+      const tMs = new Date(t).getTime()
+      return tMs >= currentMs
+    })
+  }
+
   return {
       temp: current.temperature,
       description,
       icon,
       windKph: current.windspeed,
-      rainChance: data.hourly?.precipitation_probability?.[0] ?? undefined,
-      uvIndex: data.hourly?.uv_index?.[0] ?? undefined,
+      rainChance: 
+        hourIndex >= 0 ? data.hourly?.precipitation_probability?.[hourIndex] : undefined,
+      uvIndex: 
+        hourIndex >= 0 ? data.hourly?.uv_index?.[hourIndex] : undefined,
   }
 }
 

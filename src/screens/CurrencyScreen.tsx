@@ -28,11 +28,11 @@ export default function CurrencyScreen() {
   const { coords, error: locError } = useCurrentLocation()
   const [selectedCodes, setSelectedCodes] = useState<string[]>(["BRL", "USD", "EUR"])
   const [baseAmount, setBaseAmount] = useState<number>(100)
+  const [editingCode, setEditingCode] = useState<string>("BRL")
+  const [editingInput, setEditingInput] = useState<string>("100")
   const [hydrated, setHydrated] = useState(false)
 
   const [rates, setRates] = useState<Record<string, number>>({})
-  const [loadingRates, setLoadingRates] = useState(false)
-
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [search, setSearch] = useState("")
 
@@ -52,6 +52,8 @@ export default function CurrencyScreen() {
       if (!cancelled) {
         setSelectedCodes(savedCodes)
         setBaseAmount(savedAmount)
+        setEditingCode(savedCodes[0] ?? "BRL")
+        setEditingInput(String(savedAmount))
         setHydrated(true)
       }
     }
@@ -110,13 +112,11 @@ export default function CurrencyScreen() {
         return
       }
       try {
-        setLoadingRates(true)
         const res = await fetchRates(fromCode, toCodes)
         setRates(res.rates ?? {})
       } catch (err) {
         console.error("Erro ao buscar taxas", err)
       } finally {
-        setLoadingRates(false)
       }
     }
     loadRates()
@@ -141,11 +141,19 @@ export default function CurrencyScreen() {
   const isPurple = true
 
   function handleChangeAmountForCurrency(code: string, valueStr: string) {
-    const normalized = valueStr.replace(",", ".")
+    setEditingCode(code)
+    setEditingInput(valueStr)
+
+    const normalized = valueStr.replace(",", ".").trim()
+
+    if (normalized === "") {
+      setBaseAmount(0)
+      return
+    }
+    
     const amount = parseFloat(normalized)
     
-    if (isNaN(amount)) {
-      setBaseAmount(0)
+    if (!Number.isFinite(amount)) {
       return
     }
 
@@ -161,9 +169,14 @@ export default function CurrencyScreen() {
   }
 
   function getAmountTextByCode(code: string): string {
+    if (code === editingCode) {
+      return editingInput
+    }
+
     if (code === fromCode) {
       return baseAmount.toFixed(2)
     }
+
     const rate = rates[code]
     if (!rate) return "--"
     const converted = baseAmount * rate
@@ -172,6 +185,11 @@ export default function CurrencyScreen() {
 
   function handleRemoveCurrency(code: string) {
     setSelectedCodes((prev) => prev.filter((c) => c !== code))
+
+    if (editingCode === code) {
+      setEditingCode(fromCode)
+      setEditingInput(baseAmount.toFixed(2))
+    }
   }
 
   function handleAddCurrency(code: string) {
@@ -187,6 +205,8 @@ export default function CurrencyScreen() {
 
     const amountInTarget = baseAmount * rate
     setBaseAmount(amountInTarget)
+    setEditingCode(code)
+    setEditingInput(amountInTarget.toFixed(2))
 
     setSelectedCodes((prev) => {
       const index = prev.indexOf(code)
@@ -197,6 +217,11 @@ export default function CurrencyScreen() {
       arr[index] = tmp
       return arr
     })
+  }
+
+  function closeModal() {
+    setIsModalVisible(false)
+    setSearch("")
   }
 
   return (
@@ -264,22 +289,22 @@ export default function CurrencyScreen() {
         visible={isModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setIsModalVisible(false)}
+        onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* <Text style={styles.modalTitle}>Add currency</Text> */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add currency</Text>
 
-              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+              <TouchableOpacity onPress={closeModal} style={styles.modalXButton}>
                 <CloseIcon size={18} />
               </TouchableOpacity>
             </View>
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Search by code, country or name"
+              placeholder="Search by currency or country"
+              placeholderTextColor="#888"
               value={search}
               onChangeText={setSearch}
             />
@@ -302,7 +327,7 @@ export default function CurrencyScreen() {
 
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setIsModalVisible(false)}
+              onPress={closeModal}
             >
               <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>

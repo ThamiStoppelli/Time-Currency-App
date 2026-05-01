@@ -54,7 +54,7 @@ export function CurrencyCard({
           <Text style={styles.symbolText}>{currencySymbol}</Text>
           <TextInput
             style={styles.input}
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
             value={amountText}
             onChangeText={onChangeAmount}
           />
@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#ccc",
     paddingVertical: 2,
     fontSize: 16,
+    color: "#111",
   },
   actionsColumn: {
     justifyContent: "space-between",

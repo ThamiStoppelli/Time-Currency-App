@@ -120,6 +120,7 @@ const STORAGE_WEATHER_CITIES = "weather:cities:v1"
 export default function WeatherScreen() {
   const { coords, error: locError } = useCurrentLocation()
   const [hydrated, setHydrated] = useState(false)
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null)
 
   const [loadingLocal, setLoadingLocal] = useState(true)
   const [localCity, setLocalCity] = useState<SavedCity | null>(null)
@@ -395,6 +396,16 @@ export default function WeatherScreen() {
       countryCode: c.countryCode,
     }))
     setSynced("weather", toSync)
+    setSyncFeedback("Synced to other tabs")
+
+    setTimeout(() => {
+      setSyncFeedback(null)
+    }, 1800)
+  }
+
+  function closeModal() {
+    setIsModalVisible(false)
+    setSearch("")
   }
 
   return (
@@ -405,12 +416,16 @@ export default function WeatherScreen() {
       <View style={styles.comparisonHeaderRow}>
         <Text style={styles.sectionTitle}>Comparison</Text>
 
+        {syncFeedback && (
+          <Text style={styles.syncFeedback}>{syncFeedback}</Text>
+        )}
+
         <TouchableOpacity
           style={styles.syncButton}
           onPress={handleSyncWithApp}
         >
           <SyncIcon size={14} />
-          <Text style={styles.syncButtonText}>Sync</Text>
+          <Text style={styles.syncButtonText}>Sync to all</Text>
         </TouchableOpacity>
       </View>
 
@@ -441,15 +456,14 @@ export default function WeatherScreen() {
         visible={isModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setIsModalVisible(false)}
+        onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* <Text style={styles.modalTitle}>Add city</Text> */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add city</Text>
 
-              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+              <TouchableOpacity onPress={closeModal} style={styles.modalXButton}>
                 <CloseIcon size={18} />
               </TouchableOpacity>
             </View>
@@ -457,6 +471,7 @@ export default function WeatherScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Search by city or country"
+              placeholderTextColor="#888"
               value={search}
               onChangeText={setSearch}
             />
@@ -500,7 +515,7 @@ export default function WeatherScreen() {
 
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setIsModalVisible(false)}
+              onPress={closeModal}
             >
               <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
@@ -594,7 +609,7 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "500",
   },
-    comparisonHeaderRow: {
+  comparisonHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -614,5 +629,11 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "600",
     fontSize: 12,
+  },
+  syncFeedback: {
+    color: "#705ADF",
+    fontSize: 12,
+    marginTop: 6,
+    marginBottom: 2,
   },
 })

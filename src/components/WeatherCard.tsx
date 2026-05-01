@@ -102,6 +102,11 @@ export function WeatherCard({
     return "Overall okay weather, just adapt clothes to temperature."
   }, [hasDetails, temperature, uvIndex, rainChance])
 
+  const containerStyle = [
+    styles.detailsContainer,
+    isLocal ? styles.localDetails : styles.comparisonDetails
+  ]
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -150,7 +155,7 @@ export function WeatherCard({
 
         {/* Accordion content */}
         {expanded && (
-          <View style={styles.detailsContainer}>
+          <View style={containerStyle}>
             {typeof rainChance === "number" && (
               <View style={styles.detailLine}>
                 <Text style={styles.detailLabel}>Rain</Text>
@@ -202,11 +207,11 @@ export function WeatherCard({
 const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
-    alignItems: "flex-start", /* "center" */
+    alignItems: "flex-start",
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: "#fff", /* #F4F4F7 */
+    backgroundColor: "#fff",
     marginBottom: 10,
   },
   localCard: {
@@ -279,7 +284,13 @@ const styles = StyleSheet.create({
     marginTop: 6,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#d0cadb75",
+  },
+  localDetails: {
+    // backgroundColor: "#EAE4FF"
+    backgroundColor: "#D6C8FF",
+  },
+  comparisonDetails: {
+    backgroundColor: "#ECECEC",
   },
   detailLine: {
     flexDirection: "row",

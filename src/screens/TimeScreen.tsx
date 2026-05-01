@@ -158,18 +158,22 @@ function hasTimezone(r: GeoCityResult): r is GeoCityResult & { timezone: string 
 export default function TimeScreen() {
   const [mode24h, setMode24h] = useState(false)
   const [now, setNow] = useState<Date>(new Date())
+  const [baseTime, setBaseTime] = useState<Date | null>(null)
+  const [timeInput, setTimeInput] = useState("")
 
   const [localZone, setLocalZone] = useState<string | null>(null)
   const [localCountryCode, setLocalCountryCode] = useState<string>("")
   const [loadingLocal, setLoadingLocal] = useState(true)
   const [cities, setCities] = useState<TimeCity[]>(INITIAL_COMPARISON_CITIES)
   const [hydrated, setHydrated] = useState(false)
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null)
 
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [citySearch, setCitySearch] = useState("")
   const [searchResults, setSearchResults] = useState<TimeCity[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
+  const referenceTime = baseTime ?? now
 
   const { syncedLocations, sourceScreen, version, setSynced } = useSyncedSelection()
 
@@ -355,7 +359,8 @@ export default function TimeScreen() {
   }
 
   function renderTimeCard(city: TimeCity) {
-    const timeText = formatTimeForZone(city.timezone, mode24h, now)
+    const timeText = formatTimeForZone(city.timezone, mode24h, referenceTime)
+    // const timeText = formatTimeForZone(city.timezone, mode24h, now)
     const offsetLabel = offsetLabelForZone(city.timezone, now)
 
     return (
@@ -377,6 +382,11 @@ export default function TimeScreen() {
       countryCode: c.countryCode,
     }))
     setSynced("time", toSync)
+    setSyncFeedback("Synced to other tabs")
+
+    setTimeout(() => {
+      setSyncFeedback(null)
+    }, 1800)
   }
 
   if (loadingLocal || !hydrated) {
@@ -400,11 +410,17 @@ export default function TimeScreen() {
   const localOffsetLabel = localZone
     ? offsetLabelForZone(localZone, now)
     : "Local"
+  
   const localTimeText = new Intl.DateTimeFormat(undefined, {
     hour: "numeric",
     minute: "2-digit",
     hour12: !mode24h,
-  }).format(now)
+  }).format(referenceTime)
+
+  function closeModal() {
+    setIsModalVisible(false)
+    setCitySearch("")
+  }
 
   return (
     <View style={styles.container}>
@@ -418,6 +434,51 @@ export default function TimeScreen() {
           textOn="AM | PM"
           textOff="24 hours"
         />
+      </View>
+
+      <View style={styles.simulationRow}>
+        <TextInput
+          style={styles.timeInput}
+          placeholder="Set time (HH:mm)"
+          placeholderTextColor="#888"
+          value={timeInput}
+          onChangeText={(val) => {
+            const cleaned = val.replace(/[^\d:]/g, "")
+            setTimeInput(cleaned)
+            
+            const [h, m] = cleaned.split(":").map(Number)
+
+            if (
+              !Number.isNaN(h) &&
+              !Number.isNaN(m) &&
+              h >= 0 &&
+              h <= 23 &&
+              m >= 0 &&
+              m <= 59
+            ) {
+              const d = new Date()
+              d.setHours(h)
+              d.setMinutes(m)
+              d.setSeconds(0)
+              d.setMilliseconds(0)
+              setBaseTime(d)
+            }
+
+            if (cleaned === "") {
+              setBaseTime(null)
+            }
+          }}
+          keyboardType="numbers-and-punctuation"
+        />
+        <TouchableOpacity
+          style={styles.nowButton}
+          onPress={() => {
+            setBaseTime(null)
+            setTimeInput("")
+          }}
+        >
+          <Text style={styles.nowButtonText}>Now</Text>
+        </TouchableOpacity>
       </View>
 
       <TimeCard
@@ -434,12 +495,16 @@ export default function TimeScreen() {
           Comparison
         </Text>
 
+        {syncFeedback && (
+          <Text style={styles.syncFeedback}>{syncFeedback}</Text>
+        )}
+
         <TouchableOpacity
           style={styles.syncButton}
           onPress={handleSyncWithApp}
         >
           <SyncIcon size={14} />
-          <Text style={styles.syncButtonText}>Sync</Text>
+          <Text style={styles.syncButtonText}>Sync to all</Text>
         </TouchableOpacity>
       </View>
 
@@ -470,7 +535,7 @@ export default function TimeScreen() {
         visible={isModalVisible}
         animationType="slide"
         transparent
-        onRequestClose={() => setIsModalVisible(false)}
+        onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -478,14 +543,15 @@ export default function TimeScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add city</Text>
 
-              <TouchableOpacity onPress={() => setIsModalVisible(false)} style={styles.modalXButton}>
+              <TouchableOpacity onPress={closeModal} style={styles.modalXButton}>
                 <CloseIcon size={18} />
               </TouchableOpacity>
             </View>
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Type city or country"
+              placeholder="Search by city or country"
+              placeholderTextColor="#888"
               value={citySearch}
               onChangeText={setCitySearch}
             />
@@ -531,7 +597,7 @@ export default function TimeScreen() {
 
             <TouchableOpacity
               style={styles.modalCloseButton}
-              onPress={() => setIsModalVisible(false)}
+              onPress={closeModal}
             >
               <Text style={styles.modalCloseButtonText}>Done</Text>
             </TouchableOpacity>
@@ -651,5 +717,37 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "600",
     fontSize: 12,
+  },
+  syncFeedback: {
+    color: "#705ADF",
+    fontSize: 12,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  simulationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  timeInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#fff",
+  },
+  nowButton: {
+    backgroundColor: "#705ADF",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  nowButtonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 })
