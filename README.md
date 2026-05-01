@@ -167,6 +167,15 @@ Planned improvements focus on enhancing usability, scalability and performance:
 
 ---
 
+## 🧭 Why this project matters
+
+This project reflects how I approach building products:
+- Start from real user needs
+- Simplify complex workflows
+- Balance UX decisions with technical constraints
+
+---
+
 ## 👩‍💻 Author
 
 Thamires Stoppelli
