@@ -1,7 +1,8 @@
 # 🌍 Time & Currency App
-Built as a personal product based on real daily needs while working remotely across different countries.
 
 A mobile application designed to simplify how people compare time zones, weather and currencies across multiple countries — all in one place.
+
+Built as a personal product based on real daily needs while working remotely across different countries.
 
 Highly useful for travelers, remote workers and digital nomads who need fast, reliable access to global information without switching between multiple apps.
 
