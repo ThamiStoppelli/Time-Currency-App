@@ -54,3 +54,109 @@ Enables scalability and cleaner state management.
 ## 🏗 Architecture
 
 The project follows a modular and scalable structure:
+
+    src/
+    ├── components/  # UI components (cards, toggles)
+    ├── screens/     # Main feature screens
+    ├── services/    # API integrations
+    ├── hooks/       # Custom hooks (location, logic)
+    ├── context/     # Global state management
+    ├── storage/     # Local persistence
+    ├── utils/       # Helpers and formatting
+    └── data/        # Static metadata
+
+---
+
+## 🔌 API Integrations
+
+- Geocoding API → city search and location resolution  
+- Time API → timezone data  
+- Weather API → real-time weather data  
+- Currency API → exchange rates  
+
+---
+
+## ⚙️ Tech Stack
+
+- React Native (Expo)
+- TypeScript
+- Styled Components
+- Context API (global state)
+- REST APIs
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/ThamiStoppelli/Time-Currency-App.git
+cd Time-Currency-App
+```
+### 2. Install dependencies
+```npm install
+```
+### 3. Configure environment variables
+```Create a .env file in the root:
+OPENWEATHER_API_KEY=your_key_here
+CURRENCY_API_KEY=your_key_here
+```
+### 4. Run the project
+npx expo start
+
+---
+
+## 📱 Demo
+
+You can check the project visuals and case study in the portfolio.
+
+https://github.com/user-attachments/assets/47939048-e025-43c8-bf0e-9a1a55341e0c
+
+### Weather:
+<img width="739" height="1600" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" />
+<img width="739" height="1600" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" />
+<img width="739" height="1600" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
+
+### Time:
+<img width="739" height="1600" alt="time" src="https://github.com/user-attachments/assets/fefb2d05-7932-4db7-9874-3b197399d3a8" />
+<img width="739" height="1600" alt="current time" src="https://github.com/user-attachments/assets/a4748f27-d974-41cf-b80f-37ec91280015" />
+<img width="739" height="1600" alt="time AMPM" src="https://github.com/user-attachments/assets/a1bb9caf-b0c8-4c5b-a438-e6f31b2a8ae2" />
+
+
+### Currency:
+<img width="739" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" />
+<img width="739" height="1600" alt="add currency" src="https://github.com/user-attachments/assets/d831f418-d464-4922-bef5-ff32b8775a02" />
+<img width="739" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
+
+
+---
+
+## 🧩 Future Improvements
+
+- Drag & drop reordering for comparison lists
+- Dark mode
+- Multi-language support
+- More robust location model (lat/lon + timezone)
+- Performance optimizations (caching + fewer API calls)
+
+---
+
+## 📚 Learnings
+
+- Designing for clarity is more important than adding features
+- Separation of concerns improves both UX and code architecture
+- Syncing data across features requires clear mental models
+- API-driven apps need fallback strategies and consistency handling
+
+---
+
+## 👩‍💻 Author
+
+Thamires Stoppelli
+Frontend & Mobile Developer • UI/UX Designer
+
+---
+
+## 📄 License
+
+This project is for portfolio purposes.
