@@ -1,8 +1,10 @@
 # 🌍 Time & Currency App
 
-A mobile application that centralizes **time zones, weather and currency conversion** into a single, intuitive comparison experience.
+A mobile application designed to simplify how people compare time zones, weather and currencies across multiple countries — all in one place.
 
-Built for travelers, remote workers and digital nomads who need fast, reliable access to global information without switching between multiple apps.
+Built as a personal product based on real daily needs while working remotely across different countries.
+
+Highly useful for travelers, remote workers and digital nomads who need fast, reliable access to global information without switching between multiple apps.
 
 ---
 
@@ -34,7 +36,7 @@ Built for travelers, remote workers and digital nomads who need fast, reliable a
 Time and Weather are location-based → can be synced  
 Currency follows a different logic → remains independent  
 
-This reduces confusion and improves usability.
+This reduces cognitive load and prevents inconsistent behavior between features.
 
 ### Modular architecture
 Each feature is built as an independent module:
@@ -113,21 +115,23 @@ You can check the project visuals and case study in the portfolio.
 https://github.com/user-attachments/assets/47939048-e025-43c8-bf0e-9a1a55341e0c
 
 ### Weather:
-<p align="center">
+Real-time weather comparison with expandable details such as rain, UV index and wind conditions and the "+" button to add more cities with a search bar.
+<p align="left">
     <img width="28%" height="1600" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" />
     <img width="28%" height="1600" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" />
     <img width="28%" height="1600" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
 </p>
 
 ### Time:
-<p align="center">
+Time comparison that allow.
+<p align="left">
     <img width="28%" height="1600" alt="time" src="https://github.com/user-attachments/assets/fefb2d05-7932-4db7-9874-3b197399d3a8" />
     <img width="28%" height="1600" alt="current time" src="https://github.com/user-attachments/assets/a4748f27-d974-41cf-b80f-37ec91280015" />
     <img width="28%" height="1600" alt="time AMPM" src="https://github.com/user-attachments/assets/a1bb9caf-b0c8-4c5b-a438-e6f31b2a8ae2" />
 </p>
 
 ### Currency:
-<p align="center">
+<p align="left">
     <img width="28%" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" />
     <img width="28%" height="1600" alt="add currency" src="https://github.com/user-attachments/assets/d831f418-d464-4922-bef5-ff32b8775a02" />
     <img width="28%" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
@@ -135,8 +139,16 @@ https://github.com/user-attachments/assets/47939048-e025-43c8-bf0e-9a1a55341e0c
 
 ---
 
-## 🧩 Future Improvements
+## 🔗 Case Study
 
+Full product case study available here:  
+👉 https://thamiresstoppelli-portfolio.vercel.app/project/timecurrencyapp
+
+---
+
+## 🧩 Next Steps
+
+Planned improvements focus on enhancing usability, scalability and performance:
 - Drag & drop reordering for comparison lists
 - Dark mode
 - Multi-language support
