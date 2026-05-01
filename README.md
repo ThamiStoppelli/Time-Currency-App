@@ -113,21 +113,25 @@ You can check the project visuals and case study in the portfolio.
 https://github.com/user-attachments/assets/47939048-e025-43c8-bf0e-9a1a55341e0c
 
 ### Weather:
-<img width="739" height="1600" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" />
-<img width="739" height="1600" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" />
-<img width="739" height="1600" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
+<p align="center">
+    <img width="28%" height="1600" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" />
+    <img width="28%" height="1600" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" />
+    <img width="28%" height="1600" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
+</p>
 
 ### Time:
-<img width="739" height="1600" alt="time" src="https://github.com/user-attachments/assets/fefb2d05-7932-4db7-9874-3b197399d3a8" />
-<img width="739" height="1600" alt="current time" src="https://github.com/user-attachments/assets/a4748f27-d974-41cf-b80f-37ec91280015" />
-<img width="739" height="1600" alt="time AMPM" src="https://github.com/user-attachments/assets/a1bb9caf-b0c8-4c5b-a438-e6f31b2a8ae2" />
-
+<p align="center">
+    <img width="28%" height="1600" alt="time" src="https://github.com/user-attachments/assets/fefb2d05-7932-4db7-9874-3b197399d3a8" />
+    <img width="28%" height="1600" alt="current time" src="https://github.com/user-attachments/assets/a4748f27-d974-41cf-b80f-37ec91280015" />
+    <img width="28%" height="1600" alt="time AMPM" src="https://github.com/user-attachments/assets/a1bb9caf-b0c8-4c5b-a438-e6f31b2a8ae2" />
+</p>
 
 ### Currency:
-<img width="739" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" />
-<img width="739" height="1600" alt="add currency" src="https://github.com/user-attachments/assets/d831f418-d464-4922-bef5-ff32b8775a02" />
-<img width="739" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
-
+<p align="center">
+    <img width="28%" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" />
+    <img width="28%" height="1600" alt="add currency" src="https://github.com/user-attachments/assets/d831f418-d464-4922-bef5-ff32b8775a02" />
+    <img width="28%" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
+</p>
 
 ---
 
