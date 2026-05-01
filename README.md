@@ -112,7 +112,8 @@ npx expo start
 
 You can check the project visuals and case study in the portfolio.
 
-https://github.com/user-attachments/assets/47939048-e025-43c8-bf0e-9a1a55341e0c
+https://github.com/user-attachments/assets/185632fb-ba64-48ac-a393-7d08f69ae37a
+
 
 ### Weather:
 Real-time weather comparison with expandable details such as rain, UV index and wind conditions and the "+" button to add more cities with a search bar.
@@ -125,16 +126,16 @@ Real-time weather comparison with expandable details such as rain, UV index and 
 ### Time:
 Real-time comparison of multiple time zones with support for 12h/24h formats and editable time simulation for planning across locations.
 <p align="left">
-    <img width="28%" height="1600" alt="time" src="https://github.com/user-attachments/assets/fefb2d05-7932-4db7-9874-3b197399d3a8" style="margin-right: 20px;" />
-    <img width="28%" height="1600" alt="current time" src="https://github.com/user-attachments/assets/a4748f27-d974-41cf-b80f-37ec91280015" style="margin-right: 20px;"/>
-    <img width="28%" height="1600" alt="time AMPM" src="https://github.com/user-attachments/assets/a1bb9caf-b0c8-4c5b-a438-e6f31b2a8ae2" />
+    <img width="739" height="1600" alt="time ampm" src="https://github.com/user-attachments/assets/44adeb1c-9a4a-4291-9e18-c796c424772d" />
+    <img width="739" height="1600" alt="time 24h" src="https://github.com/user-attachments/assets/8a4dfd42-49fb-4fbe-95fc-aaa15095b491" />
+    <img width="739" height="1600" alt="time 14h" src="https://github.com/user-attachments/assets/2b0974b2-7319-41ce-8cc6-1ec3115acaaf" />
 </p>
 
 ### Currency:
 Real-time currency conversion with flexible base selection and support for comparing multiple currencies simultaneously.
 <p align="left">
     <img width="28%" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" style="margin-right: 20px;" />
-    <img width="28%" height="1600" alt="add currency" src="https://github.com/user-attachments/assets/d831f418-d464-4922-bef5-ff32b8775a02" style="margin-right: 20px;" />
+    <img width="739" height="1600" alt="WhatsApp Image 2026-05-01 at 12 40 24" src="https://github.com/user-attachments/assets/601eada4-bcae-40c0-b8fa-e7715ce6938c" />
     <img width="28%" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
 </p>
 
