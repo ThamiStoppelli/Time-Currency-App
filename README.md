@@ -126,16 +126,16 @@ Real-time weather comparison with expandable details such as rain, UV index and 
 ### Time:
 Real-time comparison of multiple time zones with support for 12h/24h formats and editable time simulation for planning across locations.
 <p align="left">
-    <img width="739" height="1600" alt="time ampm" src="https://github.com/user-attachments/assets/44adeb1c-9a4a-4291-9e18-c796c424772d" />
-    <img width="739" height="1600" alt="time 24h" src="https://github.com/user-attachments/assets/8a4dfd42-49fb-4fbe-95fc-aaa15095b491" />
-    <img width="739" height="1600" alt="time 14h" src="https://github.com/user-attachments/assets/2b0974b2-7319-41ce-8cc6-1ec3115acaaf" />
+    <img width="28%" height="1600" alt="time ampm" src="https://github.com/user-attachments/assets/44adeb1c-9a4a-4291-9e18-c796c424772d" />
+    <img width="28%" height="1600" alt="time 24h" src="https://github.com/user-attachments/assets/8a4dfd42-49fb-4fbe-95fc-aaa15095b491" />
+    <img width="28%" height="1600" alt="time 14h" src="https://github.com/user-attachments/assets/2b0974b2-7319-41ce-8cc6-1ec3115acaaf" />
 </p>
 
 ### Currency:
 Real-time currency conversion with flexible base selection and support for comparing multiple currencies simultaneously.
 <p align="left">
     <img width="28%" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" style="margin-right: 20px;" />
-    <img width="739" height="1600" alt="WhatsApp Image 2026-05-01 at 12 40 24" src="https://github.com/user-attachments/assets/601eada4-bcae-40c0-b8fa-e7715ce6938c" />
+    <img width="28%" height="1600" alt="WhatsApp Image 2026-05-01 at 12 40 24" src="https://github.com/user-attachments/assets/601eada4-bcae-40c0-b8fa-e7715ce6938c" />
     <img width="28%" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
 </p>
 
