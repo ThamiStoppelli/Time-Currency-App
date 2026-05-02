@@ -112,7 +112,7 @@ npx expo start
 
 You can check the project visuals and case study in the portfolio.
 
-https://github.com/user-attachments/assets/185632fb-ba64-48ac-a393-7d08f69ae37a
+https://github.com/user-attachments/assets/e4180e63-d0da-4bae-8f88-c9dd5d41eb29
 
 
 ### Weather:
