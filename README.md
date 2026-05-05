@@ -16,8 +16,6 @@
 
 ## 📱 Demo
 
-You can check the project visuals and case study in the portfolio.
-
 > 30-second walkthrough of all three modules (Time, Weather, Currency)
 
 https://github.com/user-attachments/assets/e4180e63-d0da-4bae-8f88-c9dd5d41eb29
