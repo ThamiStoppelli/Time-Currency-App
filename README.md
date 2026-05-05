@@ -1,10 +1,50 @@
 # 🌍 Time & Currency App
 
-A mobile application designed to simplify how people compare time zones, weather and currencies across multiple countries — all in one place.
+> One mobile app to compare time zones, weather, and currencies across 
+> multiple countries — built for remote workers, travelers, and digital 
+> nomads who got tired of juggling 5 different apps.
 
-Built as a personal product based on real daily needs while working remotely across different countries.
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)
 
-Highly useful for travelers, remote workers and digital nomads who need fast, reliable access to global information without switching between multiple apps.
+**Status:** Personal project • Built solo • Designed in Figma → Shipped in React Native
+
+[📱 Watch Demo](#-demo) • [🧠 Product Decisions](#-product-decisions) • [🏗 Architecture](#-architecture)
+
+---
+
+## 📱 Demo
+
+You can check the project visuals and case study in the portfolio.
+
+> 30-second walkthrough of all three modules (Time, Weather, Currency)
+https://github.com/user-attachments/assets/e4180e63-d0da-4bae-8f88-c9dd5d41eb29
+
+
+### Weather:
+Real-time weather comparison with expandable details such as rain, UV index and wind conditions and the "+" button to add more cities with a search bar.
+<p align="left">
+    <img width="28%" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" style="margin-right: 20px;" />
+    <img width="28%" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" style="margin-right: 20px;" />
+    <img width="28%" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
+</p>
+
+### Time:
+Real-time comparison of multiple time zones with support for 12h/24h formats and editable time simulation for planning across locations.
+<p align="left">
+    <img width="28%" alt="time ampm" src="https://github.com/user-attachments/assets/44adeb1c-9a4a-4291-9e18-c796c424772d" style="margin-right: 20px;" />
+    <img width="28%" alt="time 24h" src="https://github.com/user-attachments/assets/8a4dfd42-49fb-4fbe-95fc-aaa15095b491" style="margin-right: 20px;" />
+    <img width="28%" alt="time 14h" src="https://github.com/user-attachments/assets/2b0974b2-7319-41ce-8cc6-1ec3115acaaf" />
+</p>
+
+### Currency:
+Real-time currency conversion with flexible base selection and support for comparing multiple currencies simultaneously.
+<p align="left">
+    <img width="28%" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" style="margin-right: 20px;" />
+    <img width="28%" alt="currency add" src="https://github.com/user-attachments/assets/601eada4-bcae-40c0-b8fa-e7715ce6938c" />
+    <img width="28%" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
+</p>
 
 ---
 
@@ -51,6 +91,17 @@ Enables scalability and cleaner state management.
 - Prevents duplicate inputs
 - Keeps workflows fast and consistent
 
+### Trade-offs I made
+
+- **No user accounts (yet).** Local persistence only. Faster to build, 
+  zero backend cost, and most users don't need cross-device sync for 
+  this use case.
+- **Context API over Redux.** App is small, state is simple. Redux 
+  would have been overengineering.
+- **Styled Components over Tailwind.** Personal preference for 
+  component-scoped styles in React Native; would reconsider on a 
+  larger team.
+
 ---
 
 ## 🏗 Architecture
@@ -78,7 +129,7 @@ The project follows a modular and scalable structure:
 
 ---
 
-## ⚙️ Tech Stack
+## ⚙️ Built With
 
 - React Native (Expo)
 - TypeScript
@@ -96,48 +147,19 @@ git clone https://github.com/ThamiStoppelli/Time-Currency-App.git
 cd Time-Currency-App
 ```
 ### 2. Install dependencies
-```npm install
+```bash
+npm install
 ```
 ### 3. Configure environment variables
-```Create a .env file in the root:
+Create a .env file in the root:
+```bash
 OPENWEATHER_API_KEY=your_key_here
 CURRENCY_API_KEY=your_key_here
 ```
 ### 4. Run the project
+```bash
 npx expo start
-
----
-
-## 📱 Demo
-
-You can check the project visuals and case study in the portfolio.
-
-https://github.com/user-attachments/assets/e4180e63-d0da-4bae-8f88-c9dd5d41eb29
-
-
-### Weather:
-Real-time weather comparison with expandable details such as rain, UV index and wind conditions and the "+" button to add more cities with a search bar.
-<p align="left">
-    <img width="28%" height="1600" alt="weather" src="https://github.com/user-attachments/assets/26164e7f-bb08-46b6-862a-9b9bc4078f00" style="margin-right: 20px;" />
-    <img width="28%" height="1600" alt="weather info2" src="https://github.com/user-attachments/assets/23137e17-7729-4cfb-a7cb-d049ebb3ecf0" style="margin-right: 20px;" />
-    <img width="28%" height="1600" alt="add city search" src="https://github.com/user-attachments/assets/25db3834-ba8b-4d79-ab7e-87e5e72cb6a0" />
-</p>
-
-### Time:
-Real-time comparison of multiple time zones with support for 12h/24h formats and editable time simulation for planning across locations.
-<p align="left">
-    <img width="28%" height="1600" alt="time ampm" src="https://github.com/user-attachments/assets/44adeb1c-9a4a-4291-9e18-c796c424772d" />
-    <img width="28%" height="1600" alt="time 24h" src="https://github.com/user-attachments/assets/8a4dfd42-49fb-4fbe-95fc-aaa15095b491" />
-    <img width="28%" height="1600" alt="time 14h" src="https://github.com/user-attachments/assets/2b0974b2-7319-41ce-8cc6-1ec3115acaaf" />
-</p>
-
-### Currency:
-Real-time currency conversion with flexible base selection and support for comparing multiple currencies simultaneously.
-<p align="left">
-    <img width="28%" height="1600" alt="currency" src="https://github.com/user-attachments/assets/ae78aeb7-770d-48d2-ae68-00a77546abae" style="margin-right: 20px;" />
-    <img width="28%" height="1600" alt="WhatsApp Image 2026-05-01 at 12 40 24" src="https://github.com/user-attachments/assets/601eada4-bcae-40c0-b8fa-e7715ce6938c" />
-    <img width="28%" height="1600" alt="currency many" src="https://github.com/user-attachments/assets/68a01793-091d-4869-b798-2dba89a2e342" />
-</p>
+```
 
 ---
 
