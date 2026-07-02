@@ -360,7 +360,6 @@ export default function TimeScreen() {
 
   function renderTimeCard(city: TimeCity) {
     const timeText = formatTimeForZone(city.timezone, mode24h, referenceTime)
-    // const timeText = formatTimeForZone(city.timezone, mode24h, now)
     const offsetLabel = offsetLabelForZone(city.timezone, now)
 
     return (
