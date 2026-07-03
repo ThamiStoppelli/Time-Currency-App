@@ -4,7 +4,7 @@
     "slug": "TimeCurrencyApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/logo-icon.png",
     "scheme": "timecurrencyapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -26,10 +26,13 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/images/logo-icon.png",
+      "name": "Time Currency",
+      "shortName": "TimeCurrency",
+      "themeColor": "#705ADF",
+      "backgroundColor": "#705ADF"
     },
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "ffe5a7df-2fd7-42ca-9264-eab00046d38e"
       }
