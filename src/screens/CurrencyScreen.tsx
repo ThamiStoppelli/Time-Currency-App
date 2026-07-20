@@ -11,6 +11,7 @@ import {
 } from "react-native"
 import { useCurrentLocation } from "../hooks/useLocation"
 import { CurrencyCard } from "../components/CurrencyCard"
+import { ReferenceSection } from "../components/ReferenceSection"
 import { PlusIcon } from "../../assets/svgs/plus-icon"
 import { CloseIcon } from "../../assets/svgs/close-icon"
 import { fetchRates } from "../services/currencyApi"
@@ -150,9 +151,9 @@ export default function CurrencyScreen() {
       setBaseAmount(0)
       return
     }
-    
+
     const amount = parseFloat(normalized)
-    
+
     if (!Number.isFinite(amount)) {
       return
     }
@@ -198,24 +199,38 @@ export default function CurrencyScreen() {
     setSearch("")
   }
 
-  function handleSwapWithFrom(code: string) {
+  function handleSetReference(code: string) {
     if (code === fromCode) return
+
     const rate = rates[code]
-    if (!rate) return
 
-    const amountInTarget = baseAmount * rate
-    setBaseAmount(amountInTarget)
+    if (!rate) {
+      console.warn(`No exchange rate available for ${code}`)
+      return
+    }
+
+    // Mantém o mesmo valor econômico após trocar a moeda de referência.
+    // Exemplo: BRL 100 → EUR 16, em vez de EUR 100.
+    const amountInNewReference = baseAmount * rate
+
+    setBaseAmount(amountInNewReference)
     setEditingCode(code)
-    setEditingInput(amountInTarget.toFixed(2))
+    setEditingInput(amountInNewReference.toFixed(2))
 
-    setSelectedCodes((prev) => {
-      const index = prev.indexOf(code)
-      if (index <= 0) return prev
-      const arr = [...prev]
-      const tmp = arr[0]
-      arr[0] = arr[index]
-      arr[index] = tmp
-      return arr
+    setSelectedCodes((previousCodes) => {
+      const targetIndex = previousCodes.indexOf(code)
+
+      if (targetIndex <= 0) {
+        return previousCodes
+      }
+
+      const nextCodes = [...previousCodes]
+      const previousReference = nextCodes[0]
+
+      nextCodes[0] = code
+      nextCodes[targetIndex] = previousReference
+
+      return nextCodes
     })
   }
 
@@ -226,48 +241,41 @@ export default function CurrencyScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>From</Text>
 
-      <CurrencyCard
-        isFrom
-        country={fromMeta.country}
-        countryCode={fromMeta.countryCode}
-        currencyName={fromMeta.name}
-        currencyCode={fromMeta.code}
-        currencySymbol={fromMeta.symbol}
-        amountText={getAmountTextByCode(fromMeta.code)}
-        onChangeAmount={(value) => handleChangeAmountForCurrency(fromMeta.code, value)}
-      />
-
-            <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.sectionTitle, { marginTop: 16, marginBottom: 0 }]}>
-          To
-        </Text>
-      </View>
-
-      <FlatList
-        data={toCodes}
+      <ReferenceSection<string>
+        referenceItem={fromCode}
+        items={toCodes}
         keyExtractor={(code) => code}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 32 }}
-        ListEmptyComponent={() => (
-          <Text style={styles.emptyText}>Nenhuma moeda adicionada</Text>
-        )}
-        ListFooterComponent={() => (
-          <View style={styles.addButtonContainer}>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setIsModalVisible(true)}
-            >
-              <PlusIcon
-                size={32}
-                bgColor={isPurple ? "#705ADF" : "#3C3B6E"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-        renderItem={({ item: code }) => {
+        emptyText="No currencies added"
+        renderReference={(code, isDropTargetActive) => {
           const meta = getCurrencyMeta(code)
-          if (!meta) return null
+
+          if (!meta) {
+            return <View />
+          }
+          return (
+            <CurrencyCard
+            isFrom
+            isDropTargetActive={isDropTargetActive}
+            country={meta.country}
+            countryCode={meta.countryCode}
+            currencyName={meta.name}
+            currencyCode={meta.code}
+            currencySymbol={meta.symbol}
+            amountText={getAmountTextByCode(meta.code)}
+            editable
+            onChangeAmount={(value) =>
+              handleChangeAmountForCurrency(meta.code, value)
+            }
+            />
+          )}
+        } 
+        renderItem={(code, dragHandleProps) => {
+          const meta = getCurrencyMeta(code)
+
+          if (!meta) {
+            return <View />
+          }
 
           return (
             <CurrencyCard
@@ -277,12 +285,33 @@ export default function CurrencyScreen() {
               currencyCode={meta.code}
               currencySymbol={meta.symbol}
               amountText={getAmountTextByCode(meta.code)}
-              onChangeAmount={(value) => handleChangeAmountForCurrency(meta.code, value)}
-              onRemove={() => handleRemoveCurrency(meta.code)}
-              onSwap={() => handleSwapWithFrom(meta.code)}
+              dragHandleProps={dragHandleProps}
+              onRemove={() =>
+                handleRemoveCurrency(meta.code)
+              }
             />
           )
         }}
+        onReferenceChange={(code) =>
+          handleSetReference(code)
+        }
+        listFooter={
+          <View style={styles.addButtonContainer}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setIsModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add currency"
+            >
+              <PlusIcon
+                size={32}
+                bgColor={
+                  isPurple ? "#705ADF" : "#3C3B6E"
+                }
+              />
+            </TouchableOpacity>
+          </View>
+        }
       />
 
       <Modal
@@ -339,8 +368,8 @@ export default function CurrencyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     padding: 16,
     margin: 6,
   },
@@ -348,16 +377,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  sectionTitle: {
-    fontSize: 18,
-    marginBottom: 12,
-    marginTop: 20,
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#666",
-    marginVertical: 24,
   },
   addButtonContainer: {
     marginTop: 8,
@@ -420,12 +439,5 @@ const styles = StyleSheet.create({
   modalCloseButtonText: {
     color: "#FFF",
     fontWeight: "500",
-  },
-    sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 16,
-    marginBottom: 4,
   },
 })

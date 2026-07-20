@@ -1,19 +1,20 @@
 import React from "react"
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, GestureResponderHandlers } from "react-native"
 import { TrashIcon } from "../../assets/svgs/trash-icon"
-import { SwitchIcon } from "../../assets/svgs/switch-icon"
 
 type CurrencyCardProps = {
   isFrom?: boolean
+  isDropTargetActive?: boolean
   country: string
   countryCode: string
   currencyName: string
   currencyCode: string
   currencySymbol: string
   amountText: string
-  onChangeAmount: (value: string) => void
+  editable?: boolean
+  onChangeAmount?: (value: string) => void
   onRemove?: () => void
-  onSwap?: () => void
+  dragHandleProps?: GestureResponderHandlers
 }
 
 function countryCodeToFlagEmoji(code: string) {
@@ -28,54 +29,94 @@ function countryCodeToFlagEmoji(code: string) {
 
 export function CurrencyCard({
   isFrom = false,
+  isDropTargetActive = false,
   country,
   countryCode,
   currencyName,
   currencyCode,
   currencySymbol,
   amountText,
+  editable = false,
   onChangeAmount,
   onRemove,
-  onSwap,
+  dragHandleProps,
 }: CurrencyCardProps) {
   const flag = countryCodeToFlagEmoji(countryCode)
 
   return (
-    <View style={[styles.card, isFrom && styles.fromCard]}>
+    <View
+      style={[
+        styles.card,
+        isFrom && styles.fromCard,
+        isDropTargetActive && styles.activeDropTarget,
+      ]}
+    >
       <Text style={styles.flag}>{flag}</Text>
 
       <View style={styles.infoColumn}>
         <Text style={styles.titleText}>
           {country} – {currencyName}{" "}
-          <Text style={styles.codeText}>({currencyCode})</Text>
+          <Text style={styles.codeText}>
+            ({currencyCode})
+          </Text>
         </Text>
 
         <View style={styles.amountRow}>
-          <Text style={styles.symbolText}>{currencySymbol}</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            value={amountText}
-            onChangeText={onChangeAmount}
-          />
+          <Text style={styles.symbolText}>
+            {currencySymbol}
+          </Text>
+
+          {editable ? (
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={amountText}
+              onChangeText={(value) => onChangeAmount?.(value)}
+            />
+          ) : (
+            <Text style={styles.amountText}>
+              {amountText}
+            </Text>
+          )}
         </View>
       </View>
 
-      <View style={styles.actionsColumn}>
-        {/* Swap */}
-        {onSwap && (
-          <TouchableOpacity style={styles.swapButton} onPress={onSwap}>
-            <SwitchIcon size={20} />
-          </TouchableOpacity>
-        )}
+      {!isFrom && (
+        <View style={styles.actionsColumn}>
+          <View
+            style={styles.dragHandle}
+            accessibilityRole="button"
+            accessibilityLabel={`Drag ${currencyName} to set it as the reference currency`}
+            {...dragHandleProps}
+          >
+            <View style={styles.dragDotsRow}>
+              <View style={styles.dragDot} />
+              <View style={styles.dragDot} />
+            </View>
 
-        {/* Remove nos cards "To" apenas */}
-        {!isFrom && onRemove && (
-          <TouchableOpacity style={styles.trashButton} onPress={onRemove}>
-            <TrashIcon size={18} />
-          </TouchableOpacity>
-        )}
-      </View>
+            <View style={styles.dragDotsRow}>
+              <View style={styles.dragDot} />
+              <View style={styles.dragDot} />
+            </View>
+
+            <View style={styles.dragDotsRow}>
+              <View style={styles.dragDot} />
+              <View style={styles.dragDot} />
+            </View>
+          </View>
+
+          {onRemove && (
+            <TouchableOpacity
+              style={styles.trashButton}
+              onPress={onRemove}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${currencyName}`}
+            >
+              <TrashIcon size={18} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   )
 }
@@ -84,14 +125,21 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
+    minHeight: 76,
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: "#fff", /* #F4F4F7 */
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    backgroundColor: "#fff",
     marginBottom: 8,
   },
   fromCard: {
     backgroundColor: "#EAE4FF",
+  },
+  activeDropTarget: {
+    borderColor: "#705ADF",
+    backgroundColor: "#E4DAFF",
   },
   flag: {
     fontSize: 22,
@@ -125,19 +173,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#111",
   },
+  amountText: {
+    flex: 1,
+    paddingVertical: 2,
+    fontSize: 16,
+    color: "#111",
+  },
   actionsColumn: {
+    alignSelf: "stretch",
     justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginLeft: 8,
+    alignItems: "center",
+    marginLeft: 10,
   },
-  swapButton: {
-    padding: 4,
-    marginBottom: 4,
+  dragHandle: {
+    minWidth: 34,
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "grab" as any,
   },
-  swapText: {
-    fontSize: 18,
+  dragDotsRow: {
+    flexDirection: "row",
+    gap: 3,
+    marginVertical: 1.5,
+  },
+  dragDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "#777",
   },
   trashButton: {
-    padding: 4,
+    minWidth: 34,
+    minHeight: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
 })
