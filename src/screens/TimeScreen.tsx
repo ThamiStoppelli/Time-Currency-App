@@ -158,8 +158,8 @@ function hasTimezone(r: GeoCityResult): r is GeoCityResult & { timezone: string 
 export default function TimeScreen() {
   const [mode24h, setMode24h] = useState(false)
   const [now, setNow] = useState<Date>(new Date())
-  const [baseTime, setBaseTime] = useState<Date | null>(null)
-  const [timeInput, setTimeInput] = useState("")
+  const [referenceDateTime, setReferenceDateTime] =
+    useState<Date | null>(null)
 
   const [localZone, setLocalZone] = useState<string | null>(null)
   const [localCountryCode, setLocalCountryCode] = useState<string>("")
@@ -173,7 +173,7 @@ export default function TimeScreen() {
   const [searchResults, setSearchResults] = useState<TimeCity[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
-  const referenceTime = baseTime ?? now
+  const referenceTime = referenceDateTime ?? now
 
   const { syncedLocations, sourceScreen, version, setSynced } = useSyncedSelection()
 
@@ -409,12 +409,80 @@ export default function TimeScreen() {
   const localOffsetLabel = localZone
     ? offsetLabelForZone(localZone, now)
     : "Local"
-  
-  const localTimeText = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !mode24h,
-  }).format(referenceTime)
+
+  const localTimeText = new Intl.DateTimeFormat(
+    mode24h ? "en-GB" : "en-US",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: !mode24h,
+    }
+  )
+    .format(referenceTime)
+    .replace(/\s?(AM|PM)$/i, "")
+
+  const localPeriod: "AM" | "PM" =
+    referenceTime.getHours() >= 12 ? "PM" : "AM"
+
+  function handleReferenceTimeChange(
+    value: string,
+    period: "AM" | "PM" = localPeriod
+  ) {
+    const trimmedValue = value.trim()
+
+    if (!trimmedValue) {
+      setReferenceDateTime(null)
+      return
+    }
+
+    const match = trimmedValue.match(/^(\d{1,2}):(\d{2})$/)
+
+    if (!match) return
+
+    const hours = Number(match[1])
+    const minutes = Number(match[2])
+
+    let normalizedHours = hours
+
+    if (!mode24h) {
+      if (hours < 1 || hours > 12) return
+
+      normalizedHours = hours % 12
+
+      if (period === "PM") {
+        normalizedHours += 12
+      }
+    }
+
+    if (
+      hours > 23 ||
+      minutes > 59
+    ) {
+      return
+    }
+
+    const updated = new Date(referenceTime)
+    updated.setHours(normalizedHours, minutes, 0, 0)
+
+    setReferenceDateTime(updated)
+  }
+
+  function handleReferencePeriodChange(
+    newPeriod: "AM" | "PM"
+  ) {
+    const currentHours = referenceTime.getHours()
+    const updated = new Date(referenceTime)
+
+    if (newPeriod === "PM" && currentHours < 12) {
+      updated.setHours(currentHours + 12)
+    }
+
+    if (newPeriod === "AM" && currentHours >= 12) {
+      updated.setHours(currentHours - 12)
+    }
+
+    setReferenceDateTime(updated)
+  }
 
   function closeModal() {
     setIsModalVisible(false)
@@ -424,7 +492,7 @@ export default function TimeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Current Time</Text>
+        <Text style={styles.title}>From</Text>
         <Toggle
           initial={!mode24h}
           onToggle={val => setMode24h(!val)}
@@ -435,63 +503,24 @@ export default function TimeScreen() {
         />
       </View>
 
-      <View style={styles.simulationRow}>
-        <TextInput
-          style={styles.timeInput}
-          placeholder="Set time (HH:mm)"
-          placeholderTextColor="#888"
-          value={timeInput}
-          onChangeText={(val) => {
-            const cleaned = val.replace(/[^\d:]/g, "")
-            setTimeInput(cleaned)
-            
-            const [h, m] = cleaned.split(":").map(Number)
-
-            if (
-              !Number.isNaN(h) &&
-              !Number.isNaN(m) &&
-              h >= 0 &&
-              h <= 23 &&
-              m >= 0 &&
-              m <= 59
-            ) {
-              const d = new Date()
-              d.setHours(h)
-              d.setMinutes(m)
-              d.setSeconds(0)
-              d.setMilliseconds(0)
-              setBaseTime(d)
-            }
-
-            if (cleaned === "") {
-              setBaseTime(null)
-            }
-          }}
-          keyboardType="numbers-and-punctuation"
-        />
-        <TouchableOpacity
-          style={styles.nowButton}
-          onPress={() => {
-            setBaseTime(null)
-            setTimeInput("")
-          }}
-        >
-          <Text style={styles.nowButtonText}>Now</Text>
-        </TouchableOpacity>
-      </View>
-
       <TimeCard
         city={localCityName}
         country={localCountryName}
         countryCode={localCountryCode}
         gmtOffset={localOffsetLabel}
         timeText={localTimeText}
-        isLocal
+        isFrom
+        editable
+        mode24h={mode24h}
+        period={localPeriod}
+        onChangeTime={handleReferenceTimeChange}
+        onChangePeriod={handleReferencePeriodChange}
+
       />
 
       <View style={styles.comparisonHeaderRow}>
         <Text style={[styles.title, { marginTop: 16, marginBottom: 0 }]}>
-          Comparison
+          To
         </Text>
 
         {syncFeedback && (
@@ -538,7 +567,6 @@ export default function TimeScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* <Text style={styles.modalTitle}>Add city</Text> */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add city</Text>
 
@@ -584,12 +612,12 @@ export default function TimeScreen() {
               ListEmptyComponent={
                 !searchLoading
                   ? () => (
-                      <Text style={{ color: "#666", marginTop: 8 }}>
-                        {citySearch.trim()
-                          ? `No results for "${citySearch}"`
-                          : "All suggested cities are already added."}
-                      </Text>
-                    )
+                    <Text style={{ color: "#666", marginTop: 8 }}>
+                      {citySearch.trim()
+                        ? `No results for "${citySearch}"`
+                        : "All suggested cities are already added."}
+                    </Text>
+                  )
                   : null
               }
             />
@@ -608,8 +636,8 @@ export default function TimeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     padding: 16,
     margin: 6,
   },
@@ -624,8 +652,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  title: { 
-    fontSize: 18, 
+  title: {
+    fontSize: 18,
     marginBottom: 12,
     marginTop: 20
   },
@@ -696,7 +724,7 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "500",
   },
-    comparisonHeaderRow: {
+  comparisonHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -722,13 +750,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 6,
     marginBottom: 2,
-  },
-  simulationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 8,
   },
   timeInput: {
     flex: 1,
